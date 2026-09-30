@@ -29,149 +29,78 @@
     @media(max-width:760px){.app{display:block}.sidebar{position:fixed;left:-260px;width:250px;transition:.25s;z-index:60}.sidebar.open{left:0}.overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50}.overlay.show{display:block}.main{width:100%}.topbar{padding:0 16px}.mobile-menu{display:block}.page-title{display:none}.status-pill{display:none}.profile b,.profile small{display:none}.content{padding:18px 14px 34px}.heading{align-items:flex-start;flex-direction:column}.heading h1{font-size:24px}.kpis,.templates,.form-grid,.settings-grid{grid-template-columns:1fr}.span2{grid-column:auto}.phone{padding:8px}.phone-screen{min-height:560px}.floating-chat{right:14px;bottom:14px}.lead-toolbar{align-items:stretch;flex-direction:column}.search{max-width:none}}
 </style>
 </head>
+
 <body>
-  <header class="top">
-    <div class="brand"><div class="logo">360</div><div><strong>AtendeBot 360</strong><span>Chatbot com painel do cliente</span></div></div>
-    <nav class="nav"><a href="#modelos">Modelos</a><a href="#painel">Painel</a><a href="#demo">Demo</a><a href="#venda">Venda</a><a class="pill" href="#painel">Entrar no painel</a></nav>
-  </header>
-
-  <main>
-    <section class="hero">
-      <div>
-        <p class="badge">🔥 Versão 3 — painel do cliente</p>
-        <h1>Chatbot que o próprio comércio consegue editar</h1>
-        <p class="lead-text">Agora o AtendeBot 360 tem painel demonstrativo para cada cliente alterar dados do negócio, escolher modelo, ver leads, copiar código de instalação e testar o atendimento.</p>
-        <div class="actions"><a href="#painel" class="btn primary">Abrir painel do cliente</a><button class="btn ghost" onclick="openChat()">Testar chatbot</button></div>
-        <div class="trust"><span>✅ Login demonstrativo</span><span>✅ Editor do chatbot</span><span>✅ Leads em CSV</span><span>✅ Código para instalar</span></div>
-      </div>
-      <div class="screen">
-        <div class="browser"><span>Painel do Cliente</span><div class="status"><i></i><i></i><i></i></div></div>
-        <div class="panel-mini">
-          <div class="mini-card"><strong id="miniLeads">0</strong><span>leads capturados</span></div>
-          <div class="mini-card"><strong id="miniTemplate">Barbearia</strong><span>modelo ativo</span></div>
-          <div class="mini-card"><strong>24h</strong><span>atendimento automático</span></div>
-          <div class="mini-card"><strong>CSV</strong><span>exportação de contatos</span></div>
-          <div class="chat-preview"><div class="bubble bot">Olá! Sou o assistente virtual da <span id="mockName">Barbearia Demo</span>.</div><div class="bubble user">Quero saber os preços</div><div class="bubble bot" id="mockPrice">Corte R$35, barba R$25 e combo R$55.</div></div>
+<div class="overlay" id="overlay" onclick="toggleSidebar(false)"></div>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><div class="brand-mark">A</div><div><strong>AtendeBot 360</strong><span>Central de atendimento</span></div></div>
+    <div class="workspace"><div class="avatar">BD</div><div><b id="sideBusiness">Barbearia Demo</b><small id="sideModel">Modelo Barbearia</small></div></div>
+    <div class="nav-title">Principal</div>
+    <button class="nav-btn active" data-view="dashboard"><span class="ico">⌂</span>Visão geral</button>
+    <button class="nav-btn" data-view="chatbot"><span class="ico">◈</span>Meu chatbot</button>
+    <button class="nav-btn" data-view="templates"><span class="ico">▦</span>Modelos</button>
+    <button class="nav-btn" data-view="leads"><span class="ico">◎</span>Leads <span id="navLeadCount" style="margin-left:auto;background:#25334d;padding:2px 7px;border-radius:999px;font-size:10px">0</span></button>
+    <div class="nav-title">Configuração</div>
+    <button class="nav-btn" data-view="install"><span class="ico">⌘</span>Instalação</button>
+    <button class="nav-btn" data-view="settings"><span class="ico">⚙</span>Configurações</button>
+    <div class="sidebar-foot"><div class="plan"><strong>Plano Demonstrativo</strong><p>Ideal para apresentar o produto a clientes e testar o fluxo.</p><button onclick="showToast('Plano demo ativo')">Ver plano</button></div></div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px"><button class="mobile-menu" onclick="toggleSidebar(true)">☰</button><div class="page-title"><strong id="topTitle">Visão geral</strong><span id="topSubtitle">Acompanhe o desempenho do seu atendimento</span></div></div>
+      <div class="top-actions"><div class="status-pill"><span class="dot"></span>Chatbot online</div><button class="icon-btn" onclick="openChat()">💬</button><div class="profile"><div class="avatar">CL</div><div><b>Cliente Demo</b><small>Administrador</small></div></div></div>
+    </header>
+    <div class="content">
+      <section class="view active" id="view-dashboard">
+        <div class="heading"><div><h1>Boa tarde 👋</h1><p>Seu chatbot está ativo e pronto para atender seus clientes.</p></div><button class="btn primary" onclick="goView('chatbot')">Editar chatbot</button></div>
+        <div class="kpis">
+          <div class="kpi"><div class="kpi-head"><div class="kpi-icon purple">💬</div><span class="trend">+12%</span></div><small>Conversas atendidas</small><strong>128</strong></div>
+          <div class="kpi"><div class="kpi-head"><div class="kpi-icon emerald">◎</div><span class="trend">Hoje</span></div><small>Leads capturados</small><strong id="kpiLeads">0</strong></div>
+          <div class="kpi"><div class="kpi-head"><div class="kpi-icon sky">⚡</div><span class="trend">Ativo</span></div><small>Taxa de resposta</small><strong>96%</strong></div>
+          <div class="kpi"><div class="kpi-head"><div class="kpi-icon orange">⏱</div><span class="trend neutral">Média</span></div><small>Tempo de resposta</small><strong>4s</strong></div>
         </div>
-      </div>
-    </section>
-
-    <section class="section center" id="modelos">
-      <p class="badge">Modelos prontos</p>
-      <h2>Adapte para o cliente em poucos segundos</h2>
-      <p>Clique em um nicho para preencher automaticamente textos, serviços, preços, horários e mensagem do WhatsApp.</p>
-      <div class="templates" id="templateGrid"></div>
-    </section>
-
-    <section class="section demo" id="demo">
-      <div>
-        <p class="badge">Demonstração comercial</p>
-        <h2>Mostre o valor na frente do dono do comércio</h2>
-        <p>Você abre a demo, coloca o nome do negócio, troca o WhatsApp e mostra o robô respondendo. Isso ajuda a vender instalação + mensalidade.</p>
-        <div class="cards">
-          <article class="card"><h3>Atendimento automático</h3><p>Responde preço, horário, endereço, serviços e perguntas comuns.</p></article>
-          <article class="card"><h3>Captura de lead</h3><p>Pede nome e telefone antes de encaminhar ao WhatsApp.</p></article>
-          <article class="card"><h3>Painel do cliente</h3><p>O comércio pode alterar textos e ver contatos em um painel simples.</p></article>
-          <article class="card"><h3>Instalação fácil</h3><p>Gera um código de exemplo para colocar em sites e páginas.</p></article>
+        <div class="dashboard-grid">
+          <div class="panel"><div class="panel-head"><div><h3>Atividade recente</h3><span>Últimos eventos do atendimento</span></div><button class="btn secondary" style="padding:8px 10px" onclick="seedLead()">+ Lead teste</button></div><div class="panel-body"><div class="activity" id="activityList"></div></div></div>
+          <div class="panel"><div class="panel-head"><div><h3>Prévia rápida</h3><span id="previewModel">Modelo Barbearia</span></div><button class="btn secondary" style="padding:8px 10px" onclick="openChat()">Testar</button></div><div class="panel-body"><div class="preview-card"><div class="preview-top"><div><b id="previewName">Barbearia Demo</b><small>● online</small></div><span>•••</span></div><div class="preview-chat"><div class="bubble bot">Olá! Como posso ajudar você hoje?</div><div class="bubble user">Quero saber os preços</div><div class="bubble bot" id="previewPrice">Corte R$35, barba R$25 e combo R$55.</div></div><div class="preview-actions"><button>Ver preços</button><button>Falar no WhatsApp</button></div></div></div></div>
         </div>
-      </div>
-      <aside class="card">
-        <h3>Editor rápido</h3>
-        <label class="field">Nome do negócio<input id="businessName"></label>
-        <label class="field">WhatsApp com DDD<input id="whatsappNumber"></label>
-        <label class="field">Serviço principal<input id="mainService"></label>
-        <label class="field">Horário<input id="hours"></label>
-        <label class="field">Endereço<input id="address"></label>
-        <label class="field">Preços / resposta comercial<textarea id="prices"></textarea></label>
-        <button class="btn primary full" onclick="saveConfig()">Aplicar no chatbot</button>
-      </aside>
-    </section>
+      </section>
 
-    <section class="section" id="painel">
-      <p class="badge">Painel do cliente</p>
-      <h2>Área demonstrativa para o comprador enxergar valor</h2>
-      <div class="client-panel">
-        <aside class="card side">
-          <h3>Login demo</h3>
-          <p class="muted">Use para apresentar ao cliente. Nesta versão os dados ficam salvos no navegador.</p>
-          <div class="login-box" id="loginBox">
-            <label class="field">E-mail<input id="loginEmail" value="cliente@demo.com"></label>
-            <label class="field">Senha<input id="loginPass" value="123456" type="password"></label>
-            <button class="btn primary full" onclick="loginClient()">Entrar</button>
-          </div>
-          <div id="loggedBox" style="display:none">
-            <p><strong id="loggedName">Cliente Demo</strong></p>
-            <p class="muted">Painel liberado para edição.</p>
-            <button class="btn ghost full" onclick="logoutClient()">Sair</button>
-          </div>
-        </aside>
-
-        <div class="card">
-          <div class="tabs">
-            <button class="tab active" data-tab="tabResumo">Resumo</button>
-            <button class="tab" data-tab="tabEditar">Editar chatbot</button>
-            <button class="tab" data-tab="tabLeads">Leads</button>
-            <button class="tab" data-tab="tabInstalar">Instalação</button>
-          </div>
-
-          <div class="tab-panel active" id="tabResumo">
-            <div class="grid2">
-              <div class="mini-card"><strong id="dashBusiness">Barbearia Demo</strong><span>negócio ativo</span></div>
-              <div class="mini-card"><strong id="dashLeads">0</strong><span>leads capturados</span></div>
-              <div class="mini-card"><strong id="dashWhats">---</strong><span>WhatsApp configurado</span></div>
-              <div class="mini-card"><strong id="dashModel">Barbearia</strong><span>modelo selecionado</span></div>
-            </div>
-            <div class="actions"><button class="btn primary" onclick="openChat()">Testar meu chatbot</button><button class="btn ghost" onclick="seedLead()">Gerar lead de exemplo</button></div>
-          </div>
-
-          <div class="tab-panel" id="tabEditar">
-            <div class="grid2">
-              <label class="field">Nome do negócio<input id="panelBusiness"></label>
-              <label class="field">WhatsApp<input id="panelWhats"></label>
-              <label class="field">Serviço principal<input id="panelService"></label>
-              <label class="field">Horário<input id="panelHours"></label>
-              <label class="field">Endereço<input id="panelAddress"></label>
-              <label class="field">Modelo<select id="panelTemplate"></select></label>
-            </div>
-            <label class="field">Mensagem de preços<textarea id="panelPrices"></textarea></label>
-            <label class="field">Serviços oferecidos<textarea id="panelServices"></textarea></label>
-            <button class="btn primary" onclick="savePanelConfig()">Salvar alterações</button>
-          </div>
-
-          <div class="tab-panel" id="tabLeads">
-            <div class="actions"><button class="btn green" onclick="downloadLeads()">Baixar CSV</button><button class="btn ghost" onclick="seedLead()">Adicionar lead exemplo</button><button class="btn danger" onclick="clearLeads()">Limpar leads</button></div>
-            <div class="lead-list" id="leadList"></div>
-          </div>
-
-          <div class="tab-panel" id="tabInstalar">
-            <p class="muted">Código demonstrativo para mostrar ao comprador como o widget poderia ser instalado no site dele.</p>
-            <pre class="embed" id="embedCode"></pre>
-            <button class="btn ghost" onclick="copyEmbed()">Copiar código</button>
-          </div>
+      <section class="view" id="view-chatbot">
+        <div class="heading"><div><h1>Meu chatbot</h1><p>Personalize as informações e veja o resultado em tempo real.</p></div><button class="btn secondary" onclick="resetChat();openChat()">Testar em janela</button></div>
+        <div class="setup-grid">
+          <div class="panel"><div class="form-panel">
+            <div class="section-title"><span class="step">1</span><h3>Informações do negócio</h3></div>
+            <div class="form-grid"><label class="field">Nome do negócio<input id="panelBusiness"></label><label class="field">WhatsApp com DDD<input id="panelWhats"></label><label class="field">Serviço principal<input id="panelService"></label><label class="field">Horário de atendimento<input id="panelHours"></label><label class="field span2">Endereço<input id="panelAddress"></label></div>
+            <div class="section-title" style="margin-top:24px"><span class="step">2</span><h3>Respostas automáticas</h3></div>
+            <div class="form-grid"><label class="field span2">Mensagem de preços<textarea id="panelPrices"></textarea></label><label class="field span2">Serviços oferecidos<textarea id="panelServices"></textarea></label></div>
+            <div class="save-row"><button class="btn secondary" onclick="fillForms();showToast('Alterações descartadas')">Cancelar</button><button class="btn primary" onclick="savePanelConfig()">Salvar alterações</button></div>
+          </div></div>
+          <div class="phone"><div class="phone-screen"><div class="chat-header"><div class="avatar">AB</div><div><b id="phoneName">Barbearia Demo</b><small>online agora</small></div></div><div class="phone-chat"><div class="bubble bot">Olá! 👋 Sou o assistente virtual. Como posso ajudar?</div><div class="bubble user">Quais serviços vocês fazem?</div><div class="bubble bot" id="phoneServices">Corte masculino, barba, sobrancelha e agendamento.</div><div class="bubble user">E os valores?</div><div class="bubble bot" id="phonePrices">Corte R$35, barba R$25 e combo R$55.</div></div><div class="quick-pills"><button>Preços</button><button>Horários</button><button>Serviços</button><button>WhatsApp</button></div><div class="chat-input-mock"><span>Digite sua mensagem...</span><b>➜</b></div></div></div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="section price-box" id="venda">
-      <div>
-        <p class="badge">Como vender</p>
-        <h2>Venda como instalação + mensalidade</h2>
-        <p>Oferta simples para negócios locais: você instala, configura o chatbot, dá suporte e cobra mensalidade para alterações e acompanhamento.</p>
-        <div class="actions"><button class="btn primary" onclick="copyPitch()">Copiar mensagem de venda</button><button class="btn ghost" onclick="openChat()">Abrir demo</button></div>
-      </div>
-      <aside class="price"><span>Modelo sugerido</span><strong>R$ 197</strong><p>Instalação inicial</p><hr style="border:0;border-top:1px solid var(--line)"><strong style="font-size:32px">R$ 49 a R$ 97/mês</strong><p>Suporte, alterações e manutenção</p></aside>
-    </section>
+      <section class="view" id="view-templates"><div class="heading"><div><h1>Modelos prontos</h1><p>Escolha um segmento e personalize em poucos minutos.</p></div></div><div class="templates" id="templateGrid"></div></section>
+
+      <section class="view" id="view-leads">
+        <div class="heading"><div><h1>Leads</h1><p>Contatos capturados pelo chatbot durante os atendimentos.</p></div></div>
+        <div class="panel"><div class="panel-body"><div class="lead-toolbar"><div class="search"><span>⌕</span><input id="leadSearch" placeholder="Buscar por nome ou telefone" oninput="renderLeads()"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn success" onclick="downloadLeads()">↓ Exportar CSV</button><button class="btn secondary" onclick="seedLead()">+ Lead exemplo</button><button class="btn danger" onclick="clearLeads()">Limpar</button></div></div><div class="table-wrap"><table class="table"><thead><tr><th>Contato</th><th>Telefone</th><th>Interesse</th><th>Data</th><th>Status</th></tr></thead><tbody id="leadTable"></tbody></table><div class="empty" id="leadEmpty">Nenhum lead capturado ainda.</div></div></div></div>
+      </section>
+
+      <section class="view" id="view-install">
+        <div class="heading"><div><h1>Instalação</h1><p>Adicione o AtendeBot 360 ao site do cliente.</p></div></div>
+        <div class="install-grid"><div class="panel"><div class="panel-head"><div><h3>Código de instalação</h3><span>Copie e cole antes do fechamento do &lt;/body&gt;</span></div><button class="btn primary" onclick="copyEmbed()">Copiar código</button></div><div class="panel-body"><pre class="code" id="embedCode"></pre></div></div><div class="panel"><div class="panel-head"><div><h3>Checklist</h3><span>Passos para publicar</span></div></div><div class="panel-body checklist"><div class="check"><i>✓</i><div><b>Personalize o chatbot</b><p>Defina nome, serviços e respostas.</p></div></div><div class="check"><i>✓</i><div><b>Configure o WhatsApp</b><p>Use DDD + número sem espaços.</p></div></div><div class="check"><i>✓</i><div><b>Instale no site</b><p>Adicione o script à página.</p></div></div></div></div></div>
+      </section>
+
+      <section class="view" id="view-settings">
+        <div class="heading"><div><h1>Configurações</h1><p>Gerencie os dados gerais da demonstração.</p></div></div>
+        <div class="settings-grid"><div class="panel"><div class="panel-head"><div><h3>Negócio</h3><span>Identidade principal do chatbot</span></div></div><div class="panel-body"><label class="field">Modelo atual<select id="panelTemplate"></select></label><div style="margin-top:14px"><button class="btn primary" onclick="saveTemplateFromSettings()">Salvar modelo</button></div></div></div><div class="panel"><div class="panel-head"><div><h3>Dados locais</h3><span>Armazenados apenas neste navegador</span></div></div><div class="panel-body"><p style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:0">Esta versão continua sendo uma demonstração comercial. Configurações e leads ficam salvos no navegador para apresentar o produto sem depender de login real.</p><button class="btn danger" onclick="resetDemo()">Restaurar demonstração</button></div></div></div>
+      </section>
+    </div>
   </main>
-
-  <button class="chat-launcher" onclick="toggleChat()">💬 <span>Atendimento</span></button>
-  <section class="chat" id="chat">
-    <div class="chat-head"><div><strong id="chatTitle">AtendeBot 360</strong><span>Online agora</span></div><button onclick="toggleChat()">×</button></div>
-    <div class="chat-body" id="chatBody"></div>
-    <div class="quick"><button data-a="precos">Preços</button><button data-a="horarios">Horários</button><button data-a="servicos">Serviços</button><button data-a="endereco">Endereço</button><button data-a="lead">Orçamento</button><button data-a="whatsapp">WhatsApp</button></div>
-    <form class="chat-form" id="chatForm"><input id="chatInput" placeholder="Digite sua mensagem..."><button>Enviar</button></form>
-  </section>
-  <div class="toast" id="toast">Copiado!</div>
-  <footer class="footer">AtendeBot 360 — MVP comercial demonstrativo. Integração real com WhatsApp API, banco de dados e login seguro pode ser vendida como próxima etapa.</footer>
+</div>
+<div class="floating-chat"><button class="launcher" onclick="toggleChat()">💬</button><div class="chatbox" id="chat"><div class="chatbox-head"><div><b id="chatTitle">AtendeBot 360</b><small>● online agora</small></div><button onclick="toggleChat()">×</button></div><div class="chatbox-body" id="chatBody"></div><div class="chatbox-quick"><button data-a="precos">Preços</button><button data-a="horarios">Horários</button><button data-a="servicos">Serviços</button><button data-a="endereco">Endereço</button><button data-a="lead">Orçamento</button><button data-a="whatsapp">WhatsApp</button></div><form class="chatbox-form" id="chatForm"><input id="chatInput" placeholder="Digite sua mensagem..."><button>Enviar</button></form></div></div>
+<div class="toast" id="toast">Pronto!</div>
 
 <script>
 const templates={
