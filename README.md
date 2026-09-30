@@ -1,49 +1,66 @@
-# AtendeBot 360
+# AtendeBot 360 — Chatbot para negócios locais
 
-Chatbot white-label demonstrativo para negócios locais.
+MVP comercial de chatbot white-label para vender para comércios locais.
 
-## Status
+## Versão atual
 
-Versão 2 publicada como demo web.
+A versão 3 inclui:
 
-URL de produção:
+- landing page comercial;
+- modelos prontos por nicho;
+- chat flutuante demonstrativo;
+- respostas automáticas;
+- captura de leads;
+- exportação de leads em CSV;
+- botão para WhatsApp;
+- painel demonstrativo do cliente;
+- login demo;
+- edição de nome, WhatsApp, horário, endereço, serviços e preços;
+- código demonstrativo de instalação;
+- pitch de venda copiável.
 
-https://atendebot360.onrender.com
+## Modelos prontos
 
-## O que tem
+- Barbearia
+- Açaí
+- Estética
+- Loja
+- Restaurante
+- Oficina
 
-- Landing page comercial
-- Chatbot flutuante
-- Modelos prontos por nicho:
-  - Barbearia
-  - Açaí
-  - Estética
-  - Loja
-  - Restaurante
-  - Oficina
-- Configuração rápida:
-  - Nome do negócio
-  - WhatsApp
-  - Serviço principal
-  - Horários
-  - Preços / mensagem comercial
-- Respostas automáticas
-- Direcionamento para WhatsApp
-- Captura demonstrativa de leads
-- Lista de leads no navegador
-- Exportação CSV dos leads
-- Layout responsivo para celular e desktop
+## Login demo do painel
 
-## Modelo de venda sugerido
+E-mail:
 
-Instalação e configuração inicial: R$ 197 a R$ 697.
+```text
+cliente@demo.com
+```
 
-Mensalidade de manutenção: R$ 49 a R$ 97/mês.
+Senha:
 
-## Mensagem para vender
+```text
+123456
+```
 
-Olá, tudo bem? Eu criei um chatbot que atende seus clientes 24h, mostra preços, horários, serviços e leva direto para seu WhatsApp. Posso te mandar uma demonstração com o nome da sua empresa?
+Nesta versão, os dados ficam no navegador usando `localStorage`. Para virar SaaS real, o próximo passo é criar backend com banco de dados, autenticação real e contas por cliente.
 
-## Observação técnica
+## Como vender
 
-Esta versão é demonstrativa e salva configurações/leads no navegador usando localStorage. Para versão comercial completa, os próximos upgrades recomendados são banco de dados, login de cliente, painel multiempresas e integração oficial com WhatsApp/CRM.
+Oferta sugerida:
+
+- Instalação/configuração: R$ 197 a R$ 697
+- Mensalidade de suporte: R$ 49 a R$ 97/mês
+
+Mensagem comercial:
+
+> Crio um chatbot de atendimento automático para seu negócio responder clientes 24h por dia. Ele mostra preços, horários, serviços, endereço, captura nome e telefone do interessado e encaminha para o WhatsApp.
+
+## Próximos upgrades
+
+- Backend com banco de dados
+- Login real por cliente
+- Multiempresas
+- Subdomínio por cliente
+- Integração com WhatsApp API oficial
+- Painel administrativo do vendedor
+- Planos e cobrança recorrente
