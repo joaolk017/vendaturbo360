@@ -1,35 +1,49 @@
 # AtendeBot 360
 
-MVP de chatbot de atendimento para negócios locais.
+Chatbot white-label demonstrativo para negócios locais.
+
+## Status
+
+Versão 2 publicada como demo web.
+
+URL de produção:
+
+https://atendebot360.onrender.com
 
 ## O que tem
 
 - Landing page comercial
-- Chat flutuante responsivo
+- Chatbot flutuante
+- Modelos prontos por nicho:
+  - Barbearia
+  - Açaí
+  - Estética
+  - Loja
+  - Restaurante
+  - Oficina
+- Configuração rápida:
+  - Nome do negócio
+  - WhatsApp
+  - Serviço principal
+  - Horários
+  - Preços / mensagem comercial
 - Respostas automáticas
-- Botões rápidos
-- Captura de intenção de orçamento
-- Botão direto para WhatsApp
-- Configuração simples pelo navegador
-
-## Público-alvo
-
-Restaurantes, barbearias, clínicas de estética, lojas, delivery, oficinas, cursos e pequenos negócios.
+- Direcionamento para WhatsApp
+- Captura demonstrativa de leads
+- Lista de leads no navegador
+- Exportação CSV dos leads
+- Layout responsivo para celular e desktop
 
 ## Modelo de venda sugerido
 
-- Instalação/configuração: R$ 197 a R$ 697
-- Mensalidade de suporte: R$ 49 a R$ 97/mês
+Instalação e configuração inicial: R$ 197 a R$ 697.
 
-## Frase comercial
+Mensalidade de manutenção: R$ 49 a R$ 97/mês.
 
-Crio um chatbot de atendimento automático para seu negócio responder clientes 24h por dia, mostrar preços, horários, endereço, serviços e direcionar para o WhatsApp.
+## Mensagem para vender
 
-## Como rodar
+Olá, tudo bem? Eu criei um chatbot que atende seus clientes 24h, mostra preços, horários, serviços e leva direto para seu WhatsApp. Posso te mandar uma demonstração com o nome da sua empresa?
 
-```bash
-npm install
-npm start
-```
+## Observação técnica
 
-Depois acesse `http://localhost:3000`.
+Esta versão é demonstrativa e salva configurações/leads no navegador usando localStorage. Para versão comercial completa, os próximos upgrades recomendados são banco de dados, login de cliente, painel multiempresas e integração oficial com WhatsApp/CRM.
