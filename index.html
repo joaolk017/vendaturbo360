@@ -3,138 +3,200 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>AtendeBot 360 | Chatbot para negócios locais</title>
-  <meta name="description" content="Chatbot white-label para atendimento automático de negócios locais com modelos prontos, captura de leads e WhatsApp." />
+  <title>AtendeBot 360 | Painel do Cliente</title>
+  <meta name="description" content="Chatbot white-label para negócios locais com painel do cliente, modelos prontos, captura de leads e WhatsApp." />
   <style>
-    :root{--bg:#061019;--panel:#0e1a27;--panel2:#122236;--text:#f6f8fc;--muted:#a9b6c8;--gold:#ffcb2e;--gold2:#f7a923;--green:#25d188;--blue:#58a6ff;--red:#ff6363;--line:#26384d;--shadow:0 22px 80px rgba(0,0,0,.42)}
-    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 82% 5%,rgba(255,203,46,.22),transparent 30%),radial-gradient(circle at 10% 12%,rgba(37,209,136,.12),transparent 28%),var(--bg);color:var(--text)}a{text-decoration:none;color:inherit}button,input,textarea{font:inherit}.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 6vw;background:rgba(6,16,25,.84);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.08)}.brand{display:flex;align-items:center;gap:14px}.logo{width:52px;height:52px;border-radius:18px;background:linear-gradient(135deg,var(--gold),var(--gold2));display:grid;place-items:center;color:#171006;font-weight:1000;box-shadow:0 0 35px rgba(255,203,46,.22)}.brand strong{display:block;font-size:21px}.brand span{display:block;color:var(--muted);font-size:13px}.nav{display:flex;align-items:center;gap:20px;color:var(--muted);font-weight:800;font-size:14px}.nav a:hover{color:var(--gold)}.nav-cta{background:var(--gold);color:#111;padding:10px 15px;border-radius:999px}.hero{display:grid;grid-template-columns:1.04fr .96fr;gap:50px;align-items:center;min-height:675px;padding:80px 6vw 60px}.badge{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--gold),#ffe995);color:#151007;border-radius:999px;padding:9px 14px;font-weight:1000;font-size:13px}h1{font-size:clamp(42px,6.8vw,82px);letter-spacing:-2.4px;line-height:.98;margin:22px 0 20px}h2{font-size:clamp(31px,4vw,54px);letter-spacing:-1.4px;line-height:1.04;margin:10px 0 14px}h3{margin:0 0 10px}.subtitle,.section p,.pricing p{color:var(--muted);font-size:20px;line-height:1.55;max-width:780px}.actions{display:flex;gap:14px;flex-wrap:wrap;margin:30px 0}.btn{border:0;border-radius:16px;padding:14px 20px;font-weight:1000;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;justify-content:center;gap:8px}.btn:hover{transform:translateY(-2px)}.primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#111}.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}.green{background:var(--green);color:#07130d}.full{width:100%}.trust{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-weight:700}.mock{background:linear-gradient(180deg,#152236,#0a111b);border:1px solid rgba(255,255,255,.12);border-radius:36px;padding:24px;box-shadow:var(--shadow);max-width:520px;margin:auto}.mock-top{height:46px;border-radius:18px;background:#080d14;display:flex;align-items:center;justify-content:space-between;padding:0 16px;margin-bottom:14px}.dot{width:11px;height:11px;border-radius:99px;background:var(--green);box-shadow:0 0 16px var(--green)}.mock-screen{border-radius:24px;background:#07101a;padding:20px;min-height:420px}.msg{max-width:88%;padding:13px 15px;border-radius:16px;margin:10px 0;line-height:1.35;font-size:15px}.bot{background:#172842;border-top-left-radius:4px}.user{background:var(--gold);color:#111;margin-left:auto;border-top-right-radius:4px;font-weight:900}.mini-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.mini-options span{background:#101b2a;border:1px solid var(--line);border-radius:14px;padding:12px;color:var(--text);font-weight:900;font-size:13px}.section{padding:70px 6vw}.center{text-align:center}.center p{margin-left:auto;margin-right:auto}.templates{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:28px}.template{background:rgba(14,26,39,.78);border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:20px;text-align:center;cursor:pointer;transition:.2s;min-height:145px}.template:hover,.template.active{transform:translateY(-4px);border-color:var(--gold);box-shadow:0 12px 35px rgba(0,0,0,.2)}.template .ico{font-size:36px;display:block;margin-bottom:10px}.template strong{display:block}.template small{display:block;color:var(--muted);margin-top:7px;line-height:1.35}.demo{display:grid;grid-template-columns:1fr 420px;gap:34px;align-items:start;background:rgba(255,255,255,.035);border-top:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07)}.card{background:rgba(14,26,39,.84);border:1px solid rgba(255,255,255,.08);border-radius:26px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.18)}.field{display:block;color:var(--muted);font-weight:900;margin-bottom:14px}.field input,.field textarea{width:100%;margin-top:7px;background:#07101a;border:1px solid var(--line);color:var(--text);border-radius:14px;padding:13px}.field textarea{resize:vertical;min-height:70px}.features{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:30px}.features article{background:rgba(14,26,39,.78);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:24px}.features p{font-size:15px}.lead-board{display:grid;grid-template-columns:1fr 1fr;gap:20px}.lead-list{display:grid;gap:10px;max-height:320px;overflow:auto}.lead{background:#07101a;border:1px solid var(--line);border-radius:16px;padding:14px}.lead strong{display:block}.lead span{display:block;color:var(--muted);font-size:13px;margin-top:4px}.pricing{display:grid;grid-template-columns:1fr 370px;gap:40px;align-items:center}.price{background:linear-gradient(180deg,#132236,#0c1624);border:1px solid rgba(255,203,46,.38);border-radius:28px;padding:28px}.price span{color:var(--muted);font-weight:900}.price strong{display:block;font-size:54px;color:var(--gold);margin:7px 0}.price hr{border:0;border-top:1px solid var(--line);margin:22px 0}.scripts{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px}.script{background:#07101a;border:1px solid var(--line);border-radius:20px;padding:18px}.script pre{white-space:pre-wrap;color:#d8e3f2;line-height:1.45;font-size:14px}.chat-launcher{position:fixed;right:24px;bottom:24px;z-index:70;border:0;border-radius:999px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#111;font-weight:1000;padding:15px 18px;display:flex;gap:10px;align-items:center;box-shadow:0 18px 55px rgba(0,0,0,.46);cursor:pointer}.chat{position:fixed;right:24px;bottom:92px;z-index:80;width:390px;max-width:calc(100vw - 30px);height:620px;max-height:calc(100vh - 115px);background:#07101a;border:1px solid rgba(255,255,255,.12);box-shadow:var(--shadow);border-radius:28px;overflow:hidden;display:none;flex-direction:column}.chat.open{display:flex}.chat-head{display:flex;align-items:center;justify-content:space-between;padding:17px 18px;background:#101b2a;border-bottom:1px solid var(--line)}.chat-head strong{display:block}.chat-head span{display:block;color:var(--green);font-size:13px;margin-top:2px}.chat-head button{width:36px;height:36px;border:0;border-radius:99px;background:#1d2a3a;color:var(--text);font-size:24px;cursor:pointer}.chat-body{flex:1;overflow:auto;padding:18px}.chat-msg{padding:13px 14px;border-radius:16px;margin-bottom:12px;line-height:1.35;font-size:15px}.chat-msg.bot{background:#172842;border-top-left-radius:4px}.chat-msg.user{background:var(--gold);color:#111;margin-left:auto;max-width:85%;font-weight:900;border-top-right-radius:4px}.quick{display:flex;gap:8px;flex-wrap:wrap;padding:10px 13px;border-top:1px solid var(--line)}.quick button{border:1px solid var(--line);background:#101b2a;color:var(--text);border-radius:999px;padding:9px 10px;font-size:12px;font-weight:900;cursor:pointer}.chat-form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}.chat-form input{flex:1;min-width:0;background:#0b1522;border:1px solid var(--line);border-radius:14px;color:var(--text);padding:12px}.chat-form button{border:0;border-radius:14px;background:var(--gold);color:#111;font-weight:1000;padding:0 14px}.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#101b2a;border:1px solid var(--line);color:var(--text);padding:12px 16px;border-radius:999px;box-shadow:var(--shadow);z-index:100;display:none}.toast.show{display:block}.footer{padding:40px 6vw;color:var(--muted);border-top:1px solid rgba(255,255,255,.08)}@media(max-width:1050px){.hero,.demo,.pricing,.lead-board{grid-template-columns:1fr}.templates{grid-template-columns:repeat(3,1fr)}.features{grid-template-columns:1fr 1fr}.nav{display:none}}@media(max-width:640px){.topbar{padding:14px 18px}.hero,.section{padding-left:18px;padding-right:18px}.hero{padding-top:52px}.actions{flex-direction:column}.templates,.features,.scripts{grid-template-columns:1fr}.chat-launcher span{display:none}.chat{right:15px;bottom:82px}.mock{padding:14px}.price strong{font-size:42px}}
+    :root{--bg:#07101a;--card:#101b2a;--card2:#142238;--text:#f6f8fc;--muted:#aab7c9;--gold:#ffcb2e;--gold2:#f5a623;--green:#24d18b;--blue:#58a6ff;--red:#ff6565;--line:#27384d;--shadow:0 22px 80px rgba(0,0,0,.42)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 85% 5%,rgba(255,203,46,.18),transparent 30%),radial-gradient(circle at 8% 8%,rgba(36,209,139,.12),transparent 28%),var(--bg);color:var(--text)}a{color:inherit;text-decoration:none}button,input,textarea,select{font:inherit}.top{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 6vw;background:rgba(7,16,26,.86);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.08)}.brand{display:flex;align-items:center;gap:13px}.logo{width:50px;height:50px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#111;font-weight:1000;box-shadow:0 0 35px rgba(255,203,46,.18)}.brand strong{display:block;font-size:21px}.brand span{display:block;color:var(--muted);font-size:13px}.nav{display:flex;align-items:center;gap:18px;font-size:14px;font-weight:900;color:var(--muted)}.nav a:hover{color:var(--gold)}.pill{background:var(--gold);color:#111;border-radius:999px;padding:10px 14px}.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;padding:82px 6vw 64px;min-height:650px}.badge{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--gold),#ffed9a);color:#151007;border-radius:999px;padding:9px 14px;font-weight:1000;font-size:13px}h1{font-size:clamp(42px,6.4vw,80px);line-height:.98;letter-spacing:-2.3px;margin:22px 0 18px}h2{font-size:clamp(31px,3.8vw,52px);line-height:1.04;letter-spacing:-1.2px;margin:10px 0 14px}h3{margin:0 0 10px}.lead-text,.section p,.price p{color:var(--muted);font-size:20px;line-height:1.55;max-width:790px}.actions{display:flex;gap:13px;flex-wrap:wrap;margin:30px 0}.btn{border:0;border-radius:16px;padding:14px 19px;font-weight:1000;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:.2s}.btn:hover{transform:translateY(-2px)}.primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#111}.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}.green{background:var(--green);color:#06140e}.danger{background:#341621;color:#ffb5b5;border:1px solid rgba(255,101,101,.4)}.full{width:100%}.trust{display:flex;gap:13px;flex-wrap:wrap;color:var(--muted);font-weight:800}.screen{background:linear-gradient(180deg,#152338,#0b121e);border:1px solid rgba(255,255,255,.12);border-radius:34px;padding:24px;box-shadow:var(--shadow)}.browser{height:44px;border-radius:16px;background:#08101a;display:flex;align-items:center;justify-content:space-between;padding:0 14px;margin-bottom:14px;color:var(--muted);font-size:13px}.status{display:flex;gap:7px}.status i{width:10px;height:10px;border-radius:99px;background:var(--green)}.panel-mini{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mini-card{background:#08101a;border:1px solid var(--line);border-radius:20px;padding:18px;min-height:118px}.mini-card strong{display:block;font-size:28px;color:var(--gold)}.mini-card span{display:block;color:var(--muted);font-size:13px;margin-top:4px}.chat-preview{grid-column:1/-1;background:#08101a;border:1px solid var(--line);border-radius:22px;padding:18px}.bubble{max-width:88%;padding:12px 14px;border-radius:16px;margin:10px 0;line-height:1.35;font-size:14px}.bot{background:#172842;border-top-left-radius:4px}.user{background:var(--gold);color:#111;margin-left:auto;border-top-right-radius:4px;font-weight:900}.section{padding:70px 6vw}.center{text-align:center}.center p{margin-left:auto;margin-right:auto}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:28px}.card{background:rgba(16,27,42,.86);border:1px solid rgba(255,255,255,.08);border-radius:26px;padding:24px;box-shadow:0 14px 45px rgba(0,0,0,.18)}.card p{font-size:15px}.templates{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:28px}.template{background:rgba(16,27,42,.86);border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:18px;text-align:center;cursor:pointer;transition:.2s;min-height:145px}.template:hover,.template.active{border-color:var(--gold);transform:translateY(-4px)}.template .ico{font-size:34px;display:block;margin-bottom:9px}.template small{display:block;color:var(--muted);margin-top:6px;line-height:1.35}.demo{display:grid;grid-template-columns:1fr 430px;gap:32px;align-items:start;background:rgba(255,255,255,.035);border-top:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07)}.field{display:block;color:var(--muted);font-weight:900;margin-bottom:14px}.field input,.field textarea,.field select{width:100%;margin-top:7px;border:1px solid var(--line);background:#07101a;color:var(--text);border-radius:14px;padding:13px}.field textarea{min-height:72px;resize:vertical}.client-panel{display:grid;grid-template-columns:310px 1fr;gap:24px}.side{position:sticky;top:94px;align-self:start}.login-box{display:grid;gap:10px}.muted{color:var(--muted)}.tabs{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}.tab{border:1px solid var(--line);background:#0b1522;color:var(--text);border-radius:999px;padding:10px 14px;font-weight:900;cursor:pointer}.tab.active{background:var(--gold);color:#111;border-color:var(--gold)}.tab-panel{display:none}.tab-panel.active{display:block}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.lead-list{display:grid;gap:10px;max-height:360px;overflow:auto}.lead-item{background:#07101a;border:1px solid var(--line);border-radius:16px;padding:14px}.lead-item strong{display:block}.lead-item span{display:block;color:var(--muted);font-size:13px;margin-top:4px}.embed{background:#07101a;border:1px solid var(--line);border-radius:18px;padding:16px;white-space:pre-wrap;color:#dce7f5;line-height:1.45;overflow:auto}.price-box{display:grid;grid-template-columns:1fr 370px;gap:38px;align-items:center}.price{background:linear-gradient(180deg,#142238,#0d1725);border:1px solid rgba(255,203,46,.36);border-radius:28px;padding:28px}.price strong{display:block;font-size:54px;color:var(--gold);margin:7px 0}.price span{color:var(--muted);font-weight:900}.chat-launcher{position:fixed;right:24px;bottom:24px;z-index:80;border:0;border-radius:999px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#111;font-weight:1000;padding:15px 18px;display:flex;align-items:center;gap:10px;box-shadow:0 18px 55px rgba(0,0,0,.46);cursor:pointer}.chat{position:fixed;right:24px;bottom:92px;z-index:90;width:390px;max-width:calc(100vw - 30px);height:620px;max-height:calc(100vh - 115px);display:none;flex-direction:column;background:#07101a;border:1px solid rgba(255,255,255,.12);box-shadow:var(--shadow);border-radius:28px;overflow:hidden}.chat.open{display:flex}.chat-head{display:flex;align-items:center;justify-content:space-between;padding:17px 18px;background:#101b2a;border-bottom:1px solid var(--line)}.chat-head strong{display:block}.chat-head span{display:block;color:var(--green);font-size:13px;margin-top:2px}.chat-head button{width:36px;height:36px;border:0;border-radius:99px;background:#1d2a3a;color:var(--text);font-size:24px;cursor:pointer}.chat-body{flex:1;overflow:auto;padding:18px}.chat-msg{padding:13px 14px;border-radius:16px;margin-bottom:12px;line-height:1.35;font-size:15px}.chat-msg.bot{background:#172842;border-top-left-radius:4px}.chat-msg.user{background:var(--gold);color:#111;margin-left:auto;max-width:85%;font-weight:900;border-top-right-radius:4px}.quick{display:flex;gap:8px;flex-wrap:wrap;padding:10px 13px;border-top:1px solid var(--line)}.quick button{border:1px solid var(--line);background:#101b2a;color:var(--text);border-radius:999px;padding:9px 10px;font-size:12px;font-weight:900;cursor:pointer}.chat-form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}.chat-form input{flex:1;min-width:0;background:#0b1522;border:1px solid var(--line);border-radius:14px;color:var(--text);padding:12px}.chat-form button{border:0;border-radius:14px;background:var(--gold);color:#111;font-weight:1000;padding:0 14px}.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#101b2a;border:1px solid var(--line);color:var(--text);padding:12px 16px;border-radius:999px;box-shadow:var(--shadow);z-index:100;display:none}.toast.show{display:block}.footer{padding:40px 6vw;color:var(--muted);border-top:1px solid rgba(255,255,255,.08)}@media(max-width:1050px){.hero,.demo,.client-panel,.price-box{grid-template-columns:1fr}.templates{grid-template-columns:repeat(3,1fr)}.cards,.grid2{grid-template-columns:1fr 1fr}.nav{display:none}.side{position:static}}@media(max-width:640px){.top{padding:14px 18px}.hero,.section{padding-left:18px;padding-right:18px}.hero{padding-top:50px}.actions{flex-direction:column}.templates,.cards,.grid2{grid-template-columns:1fr}.chat-launcher span{display:none}.chat{right:15px;bottom:82px}.price strong{font-size:42px}}
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand"><div class="logo">360</div><div><strong>AtendeBot 360</strong><span>Chatbot vendável para negócios locais</span></div></div>
-    <nav class="nav"><a href="#modelos">Modelos</a><a href="#demo">Demo</a><a href="#leads">Leads</a><a href="#venda">Como vender</a><a class="nav-cta" href="#demo">Testar agora</a></nav>
+  <header class="top">
+    <div class="brand"><div class="logo">360</div><div><strong>AtendeBot 360</strong><span>Chatbot com painel do cliente</span></div></div>
+    <nav class="nav"><a href="#modelos">Modelos</a><a href="#painel">Painel</a><a href="#demo">Demo</a><a href="#venda">Venda</a><a class="pill" href="#painel">Entrar no painel</a></nav>
   </header>
 
   <main>
     <section class="hero">
       <div>
-        <p class="badge">🚀 Versão 2 pronta para vender</p>
-        <h1>Chatbot 24h para comércio local fechar mais clientes</h1>
-        <p class="subtitle">Uma demo white-label com modelos prontos para barbearia, açaí, clínica, loja, restaurante e oficina. O cliente tira dúvidas, deixa contato e chama no WhatsApp.</p>
-        <div class="actions"><a class="btn primary" href="#demo">Abrir demo</a><a class="btn ghost" href="#modelos">Ver modelos prontos</a></div>
-        <div class="trust"><span>✅ Captura lead</span><span>✅ WhatsApp direto</span><span>✅ Modelos por nicho</span><span>✅ Fácil de vender</span></div>
+        <p class="badge">🔥 Versão 3 — painel do cliente</p>
+        <h1>Chatbot que o próprio comércio consegue editar</h1>
+        <p class="lead-text">Agora o AtendeBot 360 tem painel demonstrativo para cada cliente alterar dados do negócio, escolher modelo, ver leads, copiar código de instalação e testar o atendimento.</p>
+        <div class="actions"><a href="#painel" class="btn primary">Abrir painel do cliente</a><button class="btn ghost" onclick="openChat()">Testar chatbot</button></div>
+        <div class="trust"><span>✅ Login demonstrativo</span><span>✅ Editor do chatbot</span><span>✅ Leads em CSV</span><span>✅ Código para instalar</span></div>
       </div>
-      <div class="mock">
-        <div class="mock-top"><strong id="mockBusiness">Barbearia Demo</strong><span class="dot"></span></div>
-        <div class="mock-screen">
-          <div class="msg bot">Olá! Sou o assistente virtual. Como posso ajudar?</div>
-          <div class="mini-options"><span>Ver preços</span><span>Agendar</span><span>Serviços</span><span>WhatsApp</span></div>
-          <div class="msg user">Quero cortar cabelo hoje</div>
-          <div class="msg bot">Perfeito! Me envie seu nome e telefone para reservar um horário.</div>
+      <div class="screen">
+        <div class="browser"><span>Painel do Cliente</span><div class="status"><i></i><i></i><i></i></div></div>
+        <div class="panel-mini">
+          <div class="mini-card"><strong id="miniLeads">0</strong><span>leads capturados</span></div>
+          <div class="mini-card"><strong id="miniTemplate">Barbearia</strong><span>modelo ativo</span></div>
+          <div class="mini-card"><strong>24h</strong><span>atendimento automático</span></div>
+          <div class="mini-card"><strong>CSV</strong><span>exportação de contatos</span></div>
+          <div class="chat-preview"><div class="bubble bot">Olá! Sou o assistente virtual da <span id="mockName">Barbearia Demo</span>.</div><div class="bubble user">Quero saber os preços</div><div class="bubble bot" id="mockPrice">Corte R$35, barba R$25 e combo R$55.</div></div>
         </div>
       </div>
     </section>
 
-    <section id="modelos" class="section center">
+    <section class="section center" id="modelos">
       <p class="badge">Modelos prontos</p>
-      <h2>Escolha o nicho e o chatbot muda sozinho</h2>
-      <p>Isso facilita muito a venda: você mostra uma demo adaptada para cada tipo de cliente na hora da apresentação.</p>
+      <h2>Adapte para o cliente em poucos segundos</h2>
+      <p>Clique em um nicho para preencher automaticamente textos, serviços, preços, horários e mensagem do WhatsApp.</p>
       <div class="templates" id="templateGrid"></div>
     </section>
 
-    <section id="demo" class="section demo">
+    <section class="section demo" id="demo">
       <div>
-        <p class="badge">Demo interativa</p>
-        <h2>Configure e teste no chat do canto</h2>
-        <p>Troque o nome, WhatsApp, serviço, preços e horário. Depois clique em “Aplicar” e abra o chatbot para simular atendimento.</p>
-        <div class="features">
-          <article><h3>Atendimento automático</h3><p>Responde dúvidas comuns sem o dono precisar ficar online o dia todo.</p></article>
-          <article><h3>Captura contatos</h3><p>Salva nome, telefone, interesse e origem do lead no navegador para demonstração.</p></article>
-          <article><h3>WhatsApp com mensagem</h3><p>Abre o WhatsApp com texto pronto para o cliente continuar a conversa.</p></article>
-          <article><h3>Personalizável</h3><p>Você adapta em minutos para vários tipos de comércio.</p></article>
+        <p class="badge">Demonstração comercial</p>
+        <h2>Mostre o valor na frente do dono do comércio</h2>
+        <p>Você abre a demo, coloca o nome do negócio, troca o WhatsApp e mostra o robô respondendo. Isso ajuda a vender instalação + mensalidade.</p>
+        <div class="cards">
+          <article class="card"><h3>Atendimento automático</h3><p>Responde preço, horário, endereço, serviços e perguntas comuns.</p></article>
+          <article class="card"><h3>Captura de lead</h3><p>Pede nome e telefone antes de encaminhar ao WhatsApp.</p></article>
+          <article class="card"><h3>Painel do cliente</h3><p>O comércio pode alterar textos e ver contatos em um painel simples.</p></article>
+          <article class="card"><h3>Instalação fácil</h3><p>Gera um código de exemplo para colocar em sites e páginas.</p></article>
         </div>
       </div>
       <aside class="card">
-        <h3>Configuração rápida</h3>
-        <label class="field">Nome do negócio<input id="businessName" /></label>
-        <label class="field">WhatsApp com DDD<input id="whatsappNumber" /></label>
-        <label class="field">Serviço principal<input id="mainService" /></label>
-        <label class="field">Horários<input id="hours" /></label>
-        <label class="field">Preços / mensagem comercial<textarea id="prices"></textarea></label>
-        <button class="btn primary full" id="saveConfig">Aplicar no chatbot</button>
+        <h3>Editor rápido</h3>
+        <label class="field">Nome do negócio<input id="businessName"></label>
+        <label class="field">WhatsApp com DDD<input id="whatsappNumber"></label>
+        <label class="field">Serviço principal<input id="mainService"></label>
+        <label class="field">Horário<input id="hours"></label>
+        <label class="field">Endereço<input id="address"></label>
+        <label class="field">Preços / resposta comercial<textarea id="prices"></textarea></label>
+        <button class="btn primary full" onclick="saveConfig()">Aplicar no chatbot</button>
       </aside>
     </section>
 
-    <section id="leads" class="section">
-      <div class="lead-board">
-        <div>
-          <p class="badge">Painel demonstrativo</p>
-          <h2>Leads capturados pelo chatbot</h2>
-          <p>Quando alguém pede orçamento no chat, o contato aparece aqui. Na versão futura isso pode ir para banco de dados, planilha ou CRM.</p>
-          <div class="actions"><button class="btn primary" onclick="openChat()">Gerar lead teste</button><button class="btn ghost" onclick="downloadLeads()">Baixar CSV</button><button class="btn ghost" onclick="clearLeads()">Limpar leads</button></div>
+    <section class="section" id="painel">
+      <p class="badge">Painel do cliente</p>
+      <h2>Área demonstrativa para o comprador enxergar valor</h2>
+      <div class="client-panel">
+        <aside class="card side">
+          <h3>Login demo</h3>
+          <p class="muted">Use para apresentar ao cliente. Nesta versão os dados ficam salvos no navegador.</p>
+          <div class="login-box" id="loginBox">
+            <label class="field">E-mail<input id="loginEmail" value="cliente@demo.com"></label>
+            <label class="field">Senha<input id="loginPass" value="123456" type="password"></label>
+            <button class="btn primary full" onclick="loginClient()">Entrar</button>
+          </div>
+          <div id="loggedBox" style="display:none">
+            <p><strong id="loggedName">Cliente Demo</strong></p>
+            <p class="muted">Painel liberado para edição.</p>
+            <button class="btn ghost full" onclick="logoutClient()">Sair</button>
+          </div>
+        </aside>
+
+        <div class="card">
+          <div class="tabs">
+            <button class="tab active" data-tab="tabResumo">Resumo</button>
+            <button class="tab" data-tab="tabEditar">Editar chatbot</button>
+            <button class="tab" data-tab="tabLeads">Leads</button>
+            <button class="tab" data-tab="tabInstalar">Instalação</button>
+          </div>
+
+          <div class="tab-panel active" id="tabResumo">
+            <div class="grid2">
+              <div class="mini-card"><strong id="dashBusiness">Barbearia Demo</strong><span>negócio ativo</span></div>
+              <div class="mini-card"><strong id="dashLeads">0</strong><span>leads capturados</span></div>
+              <div class="mini-card"><strong id="dashWhats">---</strong><span>WhatsApp configurado</span></div>
+              <div class="mini-card"><strong id="dashModel">Barbearia</strong><span>modelo selecionado</span></div>
+            </div>
+            <div class="actions"><button class="btn primary" onclick="openChat()">Testar meu chatbot</button><button class="btn ghost" onclick="seedLead()">Gerar lead de exemplo</button></div>
+          </div>
+
+          <div class="tab-panel" id="tabEditar">
+            <div class="grid2">
+              <label class="field">Nome do negócio<input id="panelBusiness"></label>
+              <label class="field">WhatsApp<input id="panelWhats"></label>
+              <label class="field">Serviço principal<input id="panelService"></label>
+              <label class="field">Horário<input id="panelHours"></label>
+              <label class="field">Endereço<input id="panelAddress"></label>
+              <label class="field">Modelo<select id="panelTemplate"></select></label>
+            </div>
+            <label class="field">Mensagem de preços<textarea id="panelPrices"></textarea></label>
+            <label class="field">Serviços oferecidos<textarea id="panelServices"></textarea></label>
+            <button class="btn primary" onclick="savePanelConfig()">Salvar alterações</button>
+          </div>
+
+          <div class="tab-panel" id="tabLeads">
+            <div class="actions"><button class="btn green" onclick="downloadLeads()">Baixar CSV</button><button class="btn ghost" onclick="seedLead()">Adicionar lead exemplo</button><button class="btn danger" onclick="clearLeads()">Limpar leads</button></div>
+            <div class="lead-list" id="leadList"></div>
+          </div>
+
+          <div class="tab-panel" id="tabInstalar">
+            <p class="muted">Código demonstrativo para mostrar ao comprador como o widget poderia ser instalado no site dele.</p>
+            <pre class="embed" id="embedCode"></pre>
+            <button class="btn ghost" onclick="copyEmbed()">Copiar código</button>
+          </div>
         </div>
-        <div class="card"><h3>Lista de leads</h3><div class="lead-list" id="leadList"></div></div>
       </div>
     </section>
 
-    <section id="venda" class="section pricing">
+    <section class="section price-box" id="venda">
       <div>
         <p class="badge">Como vender</p>
-        <h2>Oferta simples para comércio local</h2>
-        <p>Venda como instalação + mensalidade. O cliente entende rápido: atendimento automático, menos perguntas repetidas e mais pessoas indo para o WhatsApp.</p>
-        <div class="scripts">
-          <div class="script"><h3>Mensagem para oferecer</h3><pre>Olá, tudo bem? Eu criei um chatbot que atende seus clientes 24h, mostra preços, horários, serviços e leva direto para seu WhatsApp. Posso te mandar uma demonstração com o nome da sua empresa?</pre></div>
-          <div class="script"><h3>Fechamento</h3><pre>Eu configuro com sua marca, seus serviços, seu WhatsApp e deixo funcionando. A instalação fica R$197 e a manutenção mensal começa em R$49.</pre></div>
-        </div>
+        <h2>Venda como instalação + mensalidade</h2>
+        <p>Oferta simples para negócios locais: você instala, configura o chatbot, dá suporte e cobra mensalidade para alterações e acompanhamento.</p>
+        <div class="actions"><button class="btn primary" onclick="copyPitch()">Copiar mensagem de venda</button><button class="btn ghost" onclick="openChat()">Abrir demo</button></div>
       </div>
-      <div class="price"><span>Modelo inicial</span><strong>R$197</strong><p>Instalação e configuração</p><hr><strong style="font-size:31px">R$49 a R$97/mês</strong><p>Alterações, suporte e manutenção</p></div>
+      <aside class="price"><span>Modelo sugerido</span><strong>R$ 197</strong><p>Instalação inicial</p><hr style="border:0;border-top:1px solid var(--line)"><strong style="font-size:32px">R$ 49 a R$ 97/mês</strong><p>Suporte, alterações e manutenção</p></aside>
     </section>
   </main>
 
   <button class="chat-launcher" onclick="toggleChat()">💬 <span>Atendimento</span></button>
-  <section class="chat" id="chatWidget">
+  <section class="chat" id="chat">
     <div class="chat-head"><div><strong id="chatTitle">AtendeBot 360</strong><span>Online agora</span></div><button onclick="toggleChat()">×</button></div>
     <div class="chat-body" id="chatBody"></div>
-    <div class="quick" id="quickActions"><button data-action="precos">Preços</button><button data-action="horarios">Horários</button><button data-action="servicos">Serviços</button><button data-action="agendar">Agendar</button><button data-action="lead">Orçamento</button><button data-action="whatsapp">WhatsApp</button></div>
-    <form class="chat-form" id="chatForm"><input id="messageInput" placeholder="Digite sua mensagem..." autocomplete="off"><button>Enviar</button></form>
+    <div class="quick"><button data-a="precos">Preços</button><button data-a="horarios">Horários</button><button data-a="servicos">Serviços</button><button data-a="endereco">Endereço</button><button data-a="lead">Orçamento</button><button data-a="whatsapp">WhatsApp</button></div>
+    <form class="chat-form" id="chatForm"><input id="chatInput" placeholder="Digite sua mensagem..."><button>Enviar</button></form>
   </section>
-  <div class="toast" id="toast"></div>
-  <footer class="footer">AtendeBot 360 — MVP demonstrativo. Integrações oficiais de WhatsApp, banco de dados, CRM e pagamentos podem ser adicionadas conforme o cliente.</footer>
+  <div class="toast" id="toast">Copiado!</div>
+  <footer class="footer">AtendeBot 360 — MVP comercial demonstrativo. Integração real com WhatsApp API, banco de dados e login seguro pode ser vendida como próxima etapa.</footer>
 
-  <script>
-    const templates={
-      barbearia:{icon:'✂️',label:'Barbearia',desc:'cortes e agendamento',businessName:'Barbearia Demo',mainService:'Corte, barba e agendamento',hours:'Segunda a sábado, das 09h às 19h',prices:'Corte a partir de R$35. Barba a partir de R$25. Combo corte + barba a partir de R$55.',services:'corte masculino, barba, sobrancelha, pigmentação e agendamento',address:'Rua Principal, 123 - Centro',whatsappNumber:'5517999999999'},
-      acai:{icon:'🍧',label:'Açaí',desc:'cardápio e pedidos',businessName:'Açaí Demo',mainService:'Pedidos de açaí e adicionais',hours:'Todos os dias, das 14h às 23h',prices:'Copo P R$12, M R$18 e G R$24. Adicionais vendidos à parte.',services:'açaí, sorvete, adicionais, entrega e retirada',address:'Av. Brasil, 500 - Centro',whatsappNumber:'5517999999999'},
-      clinica:{icon:'💅',label:'Estética',desc:'procedimentos e horários',businessName:'Clínica Estética Demo',mainService:'Agendamento de procedimentos',hours:'Segunda a sexta, das 08h às 18h',prices:'Valores variam por procedimento. Envie seu interesse para receber orçamento personalizado.',services:'limpeza de pele, sobrancelha, manicure, depilação e avaliação',address:'Rua das Flores, 80 - Centro',whatsappNumber:'5517999999999'},
-      loja:{icon:'👕',label:'Loja',desc:'produtos e atendimento',businessName:'Loja Demo',mainService:'Atendimento e consulta de produtos',hours:'Segunda a sábado, das 09h às 18h',prices:'Temos promoções semanais. Fale no WhatsApp para consultar estoque e valores.',services:'roupas, acessórios, promoções, troca e reserva de produtos',address:'Shopping Centro, Loja 12',whatsappNumber:'5517999999999'},
-      restaurante:{icon:'🍔',label:'Restaurante',desc:'cardápio e delivery',businessName:'Restaurante Demo',mainService:'Cardápio, reservas e delivery',hours:'Todos os dias, das 11h às 23h',prices:'Pratos a partir de R$24,90. Consulte combos e promoções do dia.',services:'almoço, jantar, delivery, retirada e reserva de mesa',address:'Rua do Sabor, 222',whatsappNumber:'5517999999999'},
-      oficina:{icon:'🛠️',label:'Oficina',desc:'orçamentos e serviços',businessName:'Oficina Demo',mainService:'Orçamento de manutenção veicular',hours:'Segunda a sexta, das 08h às 18h',prices:'Orçamento conforme serviço. Informe o veículo e o problema para análise inicial.',services:'troca de óleo, revisão, freios, suspensão, diagnóstico e orçamento',address:'Av. Mecânica, 45',whatsappNumber:'5517999999999'}
-    };
-    const DEFAULT={...templates.barbearia};let config=loadConfig();let leadStep=null;let leadDraft={};
-    const $=id=>document.getElementById(id);const chat=$('chatWidget'),body=$('chatBody'),title=$('chatTitle'),toast=$('toast');
-    function loadConfig(){try{return {...DEFAULT,...JSON.parse(localStorage.getItem('ab360_config')||'{}')}}catch{return DEFAULT}}
-    function store(){localStorage.setItem('ab360_config',JSON.stringify(config))}
-    function showToast(t){toast.textContent=t;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2200)}
-    function renderTemplates(){const grid=$('templateGrid');grid.innerHTML='';Object.entries(templates).forEach(([key,t])=>{const div=document.createElement('div');div.className='template '+(config.label===t.label?'active':'');div.innerHTML=`<span class="ico">${t.icon}</span><strong>${t.label}</strong><small>${t.desc}</small>`;div.onclick=()=>applyTemplate(key);grid.appendChild(div)})}
-    function applyTemplate(key){config={...config,...templates[key]};store();applyConfig();renderTemplates();resetChat();openChat();botSay(`Modelo de ${config.label} aplicado. Agora posso responder como ${config.businessName}.`);showToast('Modelo aplicado')}
-    function applyConfig(){['businessName','whatsappNumber','mainService','hours','prices'].forEach(id=>$(id).value=config[id]||'');title.textContent=config.businessName;$('mockBusiness').textContent=config.businessName}
-    function saveConfig(){config.businessName=$('businessName').value.trim()||config.businessName;config.whatsappNumber=$('whatsappNumber').value.replace(/\D/g,'')||config.whatsappNumber;config.mainService=$('mainService').value.trim()||config.mainService;config.hours=$('hours').value.trim()||config.hours;config.prices=$('prices').value.trim()||config.prices;store();applyConfig();resetChat();openChat();botSay(`Pronto! Configuração aplicada para ${config.businessName}.`);showToast('Configuração salva')}
-    function toggleChat(){chat.classList.toggle('open');if(!body.children.length)startChat()}function openChat(){chat.classList.add('open');if(!body.children.length)startChat()}function resetChat(){body.innerHTML='';leadStep=null;leadDraft={}}
-    function startChat(){botSay(`Olá! Sou o assistente virtual da ${config.businessName}. Posso ajudar com preços, horários, serviços, agendamento ou orçamento.`)}
-    function addMsg(t,type){const d=document.createElement('div');d.className=`chat-msg ${type}`;d.textContent=t;body.appendChild(d);body.scrollTop=body.scrollHeight}function botSay(t){addMsg(t,'bot')}function userSay(t){addMsg(t,'user')}
-    function handleLeadInput(text){if(leadStep==='name'){leadDraft.name=text;leadStep='phone';botSay('Perfeito. Agora me envie seu WhatsApp com DDD.');return true}if(leadStep==='phone'){leadDraft.phone=text;leadDraft.interest=config.mainService;leadDraft.business=config.businessName;leadDraft.date=new Date().toLocaleString('pt-BR');saveLead(leadDraft);botSay(`Obrigado, ${leadDraft.name}! Seu contato foi registrado. Também posso abrir o WhatsApp para continuar agora.`);leadStep=null;leadDraft={};renderLeads();return true}return false}
-    function replyFor(text){const t=text.toLowerCase();if(handleLeadInput(text))return null;if(t.includes('preço')||t.includes('valor')||t.includes('quanto'))return config.prices;if(t.includes('horário')||t.includes('horario')||t.includes('abre')||t.includes('fecha'))return `Nosso horário: ${config.hours}.`;if(t.includes('serviço')||t.includes('servico')||t.includes('faz')||t.includes('cardápio')||t.includes('cardapio'))return `Trabalhamos com ${config.services}. Serviço principal: ${config.mainService}.`;if(t.includes('endereço')||t.includes('endereco')||t.includes('onde'))return `Endereço: ${config.address}.`;if(t.includes('agendar')||t.includes('horário')||t.includes('orcamento')||t.includes('orçamento')||t.includes('contato')){startLead();return null}if(t.includes('whats')||t.includes('atendente')){openWhatsApp();return 'Vou abrir o WhatsApp com uma mensagem pronta.'}return 'Posso te ajudar com preços, horários, serviços, endereço, agendamento ou encaminhar para o WhatsApp.'}
-    function startLead(){leadStep='name';leadDraft={};botSay('Claro! Para registrar seu interesse, qual é seu nome?')}
-    function handleAction(a){const map={precos:'Quero ver preços',horarios:'Quais são os horários?',servicos:'Quais serviços vocês oferecem?',agendar:'Quero agendar',lead:'Quero orçamento',whatsapp:'Quero falar no WhatsApp'};const text=map[a]||a;userSay(text);setTimeout(()=>{if(a==='lead'||a==='agendar'){startLead();return}if(a==='whatsapp'){openWhatsApp();botSay('Abrindo WhatsApp para falar com um atendente.');return}const r=replyFor(text);if(r)botSay(r)},350)}
-    function openWhatsApp(){const msg=encodeURIComponent(`Olá! Vim pelo chatbot da ${config.businessName} e quero informações sobre ${config.mainService}.`);window.open(`https://wa.me/${config.whatsappNumber}?text=${msg}`,'_blank')}
-    function saveLead(l){const leads=getLeads();leads.unshift(l);localStorage.setItem('ab360_leads',JSON.stringify(leads.slice(0,30)))}function getLeads(){try{return JSON.parse(localStorage.getItem('ab360_leads')||'[]')}catch{return[]}}
-    function renderLeads(){const list=$('leadList'),leads=getLeads();if(!leads.length){list.innerHTML='<div class="lead"><strong>Nenhum lead ainda</strong><span>Abra o chat e clique em orçamento para testar.</span></div>';return}list.innerHTML=leads.map(l=>`<div class="lead"><strong>${escapeHtml(l.name)} — ${escapeHtml(l.phone)}</strong><span>${escapeHtml(l.interest)} • ${escapeHtml(l.date)}</span><span>${escapeHtml(l.business)}</span></div>`).join('')}
-    function escapeHtml(s){return String(s||'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-    function downloadLeads(){const leads=getLeads();const csv=['nome,telefone,interesse,negocio,data',...leads.map(l=>[l.name,l.phone,l.interest,l.business,l.date].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','))].join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='leads-atendebot360.csv';a.click();URL.revokeObjectURL(a.href)}
-    function clearLeads(){localStorage.removeItem('ab360_leads');renderLeads();showToast('Leads apagados')}
-    $('saveConfig').onclick=saveConfig;$('quickActions').onclick=e=>{const b=e.target.closest('button');if(b)handleAction(b.dataset.action)};$('chatForm').onsubmit=e=>{e.preventDefault();const input=$('messageInput');const text=input.value.trim();if(!text)return;input.value='';userSay(text);setTimeout(()=>{const r=replyFor(text);if(r)botSay(r)},380)};
-    applyConfig();renderTemplates();renderLeads();window.toggleChat=toggleChat;window.openChat=openChat;window.downloadLeads=downloadLeads;window.clearLeads=clearLeads;
-  </script>
+<script>
+const templates={
+  barbearia:{label:'Barbearia',icon:'✂️',desc:'agenda, cortes e barba',businessName:'Barbearia Demo',mainService:'Corte, barba e agendamento',hours:'Segunda a sábado, das 08h às 19h',address:'Rua Central, 123 - Centro',prices:'Corte R$35, barba R$25 e combo R$55. Posso verificar um horário para si.',services:'Corte masculino, barba, sobrancelha, combo corte + barba e agendamento.'},
+  acai:{label:'Açaí',icon:'🍧',desc:'cardápio e pedidos',businessName:'Açaí Demo',mainService:'Pedidos de açaí e adicionais',hours:'Todos os dias, das 14h às 23h',address:'Av. Principal, 500 - Centro',prices:'Copo P R$12, M R$18 e G R$25. Temos leite em pó, banana, morango, granola e Nutella.',services:'Açaí no copo, tigela, adicionais, combos e entrega.'},
+  estetica:{label:'Estética',icon:'💅',desc:'procedimentos e agenda',businessName:'Estética Demo',mainService:'Agendamento de procedimentos',hours:'Segunda a sexta, das 09h às 18h',address:'Rua das Flores, 80 - Sala 2',prices:'Valores variam por procedimento. Envie o tratamento desejado que retornamos com orçamento.',services:'Design de sobrancelha, limpeza de pele, manicure, alongamento e depilação.'},
+  loja:{label:'Loja',icon:'🛍️',desc:'produtos e atendimento',businessName:'Loja Demo',mainService:'Produtos, tamanhos e atendimento',hours:'Segunda a sábado, das 09h às 18h',address:'Centro comercial, loja 4',prices:'Temos ofertas da semana. Informe o produto desejado para consultar disponibilidade.',services:'Consulta de produtos, tamanhos, formas de pagamento, reserva e atendimento.'},
+  restaurante:{label:'Restaurante',icon:'🍔',desc:'cardápio e reservas',businessName:'Restaurante Demo',mainService:'Cardápio, reservas e pedidos',hours:'Terça a domingo, das 11h às 23h',address:'Praça Central, 45',prices:'Pratos a partir de R$29,90. Também temos combos, bebidas e sobremesas.',services:'Cardápio, delivery, reserva de mesa, retirada e dúvidas sobre pratos.'},
+  oficina:{label:'Oficina',icon:'🛠️',desc:'orçamentos e serviços',businessName:'Oficina Demo',mainService:'Orçamentos e manutenção',hours:'Segunda a sexta, das 08h às 18h',address:'Av. Mecânica, 250',prices:'O orçamento depende do veículo e do serviço. Envie modelo, ano e problema apresentado.',services:'Troca de óleo, revisão, freios, suspensão, diagnóstico e orçamento.'}
+};
+let config=load('at360_config')||{...templates.barbearia,whatsappNumber:'5517999999999',template:'barbearia'};
+let leads=load('at360_leads')||[];let logged=load('at360_logged')||false;
+let pendingLead=false;
+function load(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}}
+function store(k,v){localStorage.setItem(k,JSON.stringify(v))}
+function $(id){return document.getElementById(id)}
+function toast(t='Pronto!'){const el=$('toast');el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1800)}
+function renderTemplates(){const grid=$('templateGrid');grid.innerHTML='';Object.entries(templates).forEach(([key,t])=>{const div=document.createElement('button');div.className='template '+(config.template===key?'active':'');div.innerHTML=`<span class="ico">${t.icon}</span><strong>${t.label}</strong><small>${t.desc}</small>`;div.onclick=()=>applyTemplate(key);grid.appendChild(div)});const sel=$('panelTemplate');if(sel){sel.innerHTML=Object.entries(templates).map(([k,t])=>`<option value="${k}">${t.label}</option>`).join('')}}
+function applyTemplate(key){config={...config,...templates[key],template:key};saveAll();fillForms();renderTemplates();resetChat();toast('Modelo aplicado')}
+function saveAll(){store('at360_config',config);store('at360_leads',leads);store('at360_logged',logged);updateUI()}
+function fillForms(){['businessName','panelBusiness'].forEach(id=>$(id)&&($(id).value=config.businessName));['whatsappNumber','panelWhats'].forEach(id=>$(id)&&($(id).value=config.whatsappNumber));['mainService','panelService'].forEach(id=>$(id)&&($(id).value=config.mainService));['hours','panelHours'].forEach(id=>$(id)&&($(id).value=config.hours));['address','panelAddress'].forEach(id=>$(id)&&($(id).value=config.address));['prices','panelPrices'].forEach(id=>$(id)&&($(id).value=config.prices));if($('panelServices'))$('panelServices').value=config.services;if($('panelTemplate'))$('panelTemplate').value=config.template}
+function saveConfig(){config={...config,businessName:$('businessName').value,whatsappNumber:$('whatsappNumber').value.replace(/\D/g,''),mainService:$('mainService').value,hours:$('hours').value,address:$('address').value,prices:$('prices').value};saveAll();fillForms();resetChat();openChat();toast('Chatbot atualizado')}
+function savePanelConfig(){config={...config,businessName:$('panelBusiness').value,whatsappNumber:$('panelWhats').value.replace(/\D/g,''),mainService:$('panelService').value,hours:$('panelHours').value,address:$('panelAddress').value,prices:$('panelPrices').value,services:$('panelServices').value,template:$('panelTemplate').value};saveAll();fillForms();renderTemplates();resetChat();toast('Alterações salvas')}
+function updateUI(){const model=templates[config.template]?.label||'Personalizado';['mockName','dashBusiness','loggedName'].forEach(id=>$(id)&&($(id).textContent=config.businessName));if($('mockBusiness'))$('mockBusiness').textContent=config.businessName;if($('mockPrice'))$('mockPrice').textContent=config.prices;if($('miniTemplate'))$('miniTemplate').textContent=model;if($('dashModel'))$('dashModel').textContent=model;if($('dashLeads'))$('dashLeads').textContent=leads.length;if($('miniLeads'))$('miniLeads').textContent=leads.length;if($('dashWhats'))$('dashWhats').textContent=config.whatsappNumber||'---';if($('chatTitle'))$('chatTitle').textContent=config.businessName;if($('embedCode'))$('embedCode').textContent=`<!-- AtendeBot 360 -->\n<script src="https://atendebot360.onrender.com/widget.js" data-business="${config.businessName}" data-whatsapp="${config.whatsappNumber}"><\/script>`;renderLeads();renderLogin()}
+function renderLogin(){if(!$('loginBox'))return;$('loginBox').style.display=logged?'none':'grid';$('loggedBox').style.display=logged?'block':'none'}
+function loginClient(){const email=$('loginEmail').value.trim();const pass=$('loginPass').value.trim();if(email&&pass){logged=true;saveAll();toast('Painel liberado')}}
+function logoutClient(){logged=false;saveAll();toast('Sessão encerrada')}
+function renderLeads(){const list=$('leadList');if(!list)return;if(!leads.length){list.innerHTML='<p class="muted">Nenhum lead ainda. Teste o chat e clique em Orçamento.</p>';return}list.innerHTML=leads.map(l=>`<div class="lead-item"><strong>${l.name}</strong><span>${l.phone}</span><span>${l.interest}</span><span>${l.date}</span></div>`).join('')}
+function seedLead(){leads.unshift({name:'Cliente Exemplo',phone:'(17) 99999-9999',interest:'Quer orçamento de '+config.mainService,date:new Date().toLocaleString('pt-BR')});saveAll();toast('Lead exemplo criado')}
+function clearLeads(){if(confirm('Limpar leads da demonstração?')){leads=[];saveAll();toast('Leads limpos')}}
+function downloadLeads(){const header='Nome,Telefone,Interesse,Data\n';const rows=leads.map(l=>`"${l.name}","${l.phone}","${l.interest}","${l.date}"`).join('\n');const blob=new Blob([header+rows],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='leads-atendebot360.csv';a.click();URL.revokeObjectURL(a.href)}
+function copyEmbed(){navigator.clipboard.writeText($('embedCode').textContent);toast('Código copiado')}
+function copyPitch(){const txt=`Olá, tudo bem? Eu crio um chatbot de atendimento automático para o seu negócio responder clientes 24h por dia. Ele mostra preços, horários, serviços, endereço, captura nome e telefone do interessado e encaminha para o WhatsApp. A instalação inicial sai a partir de R$197 e a manutenção mensal a partir de R$49.`;navigator.clipboard.writeText(txt);toast('Mensagem copiada')}
+function toggleChat(){const c=$('chat');c.classList.toggle('open');if(!$('chatBody').children.length)startChat()}
+function openChat(){const c=$('chat');c.classList.add('open');if(!$('chatBody').children.length)startChat()}
+function resetChat(){$('chatBody').innerHTML='';pendingLead=false;if($('chat').classList.contains('open'))startChat()}
+function addMsg(txt,type='bot'){const d=document.createElement('div');d.className='chat-msg '+type;d.textContent=txt;$('chatBody').appendChild(d);$('chatBody').scrollTop=$('chatBody').scrollHeight}
+function startChat(){addMsg(`Olá! Sou o assistente virtual da ${config.businessName}. Posso ajudar com preços, horários, serviços, endereço ou orçamento.`)}
+function reply(text){const t=text.toLowerCase();if(pendingLead){const parts=text.split(/[,;-]/).map(x=>x.trim()).filter(Boolean);leads.unshift({name:parts[0]||'Lead sem nome',phone:parts[1]||'Telefone não informado',interest:'Orçamento: '+config.mainService,date:new Date().toLocaleString('pt-BR')});pendingLead=false;saveAll();return 'Perfeito, recebi seu contato. Vou encaminhar para o atendimento no WhatsApp.'}if(t.includes('preço')||t.includes('valor')||t.includes('quanto'))return config.prices;if(t.includes('horário')||t.includes('horario')||t.includes('abre')||t.includes('fecha'))return 'Nosso horário: '+config.hours;if(t.includes('serviço')||t.includes('servico')||t.includes('faz'))return 'Trabalhamos com: '+config.services;if(t.includes('endereço')||t.includes('endereco')||t.includes('onde'))return 'Endereço: '+config.address;if(t.includes('whats')||t.includes('atendente')){openWhats();return 'Vou abrir o WhatsApp para continuar o atendimento.'}if(t.includes('orçamento')||t.includes('orcamento')||t.includes('agendar')||t.includes('contato')){pendingLead=true;return 'Claro. Envie seu nome e telefone separados por vírgula. Exemplo: João, 17999999999'}return 'Posso ajudar com preços, horários, serviços, endereço, orçamento ou WhatsApp.'}
+function openWhats(){const msg=encodeURIComponent(`Olá! Vim pelo chatbot da ${config.businessName} e quero informações sobre ${config.mainService}.`);window.open(`https://wa.me/${config.whatsappNumber}?text=${msg}`,'_blank')}
+document.querySelector('.quick').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const map={precos:'Quero ver preços',horarios:'Qual o horário?',servicos:'Quais serviços?',endereco:'Qual o endereço?',lead:'Quero orçamento',whatsapp:'Falar no WhatsApp'};const txt=map[b.dataset.a];addMsg(txt,'user');setTimeout(()=>addMsg(reply(txt)),350)});
+$('chatForm').addEventListener('submit',e=>{e.preventDefault();const txt=$('chatInput').value.trim();if(!txt)return;$('chatInput').value='';addMsg(txt,'user');setTimeout(()=>addMsg(reply(txt)),350)});
+document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));btn.classList.add('active');$(btn.dataset.tab).classList.add('active')}));
+renderTemplates();fillForms();saveAll();
+</script>
 </body>
 </html>
