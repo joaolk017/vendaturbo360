@@ -156,7 +156,7 @@
   .appointments-toolbar>*{min-width:0!important;width:100%!important}
 
   .floating-chat{right:12px!important;bottom:max(12px,env(safe-area-inset-bottom))!important}
-  .launcher{width:50px!important;height:50px!important}
+  .launcher{width:50px!important;height:50px!important;background:linear-gradient(135deg,#5b5cf0,#7c3aed)!important;color:#fff!important;box-shadow:0 12px 30px rgba(91,92,240,.30)!important}
   .chatbox{
     position:fixed!important;
     left:10px!important;
