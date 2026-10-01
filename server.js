@@ -1833,9 +1833,12 @@ async function handleApi(req, res, urlPath) {
     const result = buildSmartReply(cfg, message, history);
     await logConversationEvent(user.id, conversationId, 'user', message, result.intent, result.score);
     const captured = await maybeCaptureLead(user.id, conversationId, message, history, cfg);
-    let reply = result.reply;
+    const prohibitedTobaccoRequest = cfg.regulatedCategory === 'tobacco' && /(vape|pod|cigarro\s*eletr[oô]nico|e-cig|ess[eê]ncia\s+para\s+vape)/i.test(message);
+    let reply = prohibitedTobaccoRequest
+      ? 'Este estabelecimento não comercializa vapes, pods ou outros dispositivos eletrônicos para fumar. Posso ajudar com horário, endereço ou atendimento da equipe.'
+      : result.reply;
     let ai = null;
-    if (cfg.brain?.mode === 'live') {
+    if (!prohibitedTobaccoRequest && cfg.brain?.mode === 'live') {
       ai = await callGenerativeAi(user.id, cfg, message, history);
       if (ai?.text) reply = ai.text;
       else if (ai?.limited) reply = result.reply + ' Posso continuar por aqui ou encaminhar você para a equipe.';
