@@ -1,12 +1,15 @@
 {
   "name": "atendebot360-mvp",
-  "version": "1.0.0",
-  "description": "Chatbot de atendimento para negócios locais",
+  "version": "2.0.0",
+  "description": "SaaS de chatbot e captação de leads para negócios locais",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
   }
 }
