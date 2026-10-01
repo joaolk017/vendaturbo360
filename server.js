@@ -416,7 +416,7 @@ async function callGenerativeAi(userId, cfg, message, history=[]) {
   }
 }
 async function getAiUsageSummary(userId) {
-  if (!pool) return { configured: !!OPENAI_API_KEY, model: OPENAI_MODEL, today:0, month:0, inputTokens:0, outputTokens:0, dailyLimit:AI_DAILY_REQUEST_LIMIT };
+  if (!pool) return { configured: !!(GROQ_API_KEY || OPENAI_API_KEY), model: (GROQ_API_KEY ? GROQ_MODEL : OPENAI_MODEL), today:0, month:0, inputTokens:0, outputTokens:0, dailyLimit:AI_DAILY_REQUEST_LIMIT };
   const r = await pool.query(`
     SELECT
       COUNT(*) FILTER (WHERE status='ok' AND created_at >= date_trunc('day', NOW()))::int AS today_count,
@@ -427,7 +427,7 @@ async function getAiUsageSummary(userId) {
   `, [userId]);
   const x=r.rows[0]||{};
   return {
-    configured: !!OPENAI_API_KEY, model: OPENAI_MODEL,
+    configured: !!(GROQ_API_KEY || OPENAI_API_KEY), model: (GROQ_API_KEY ? GROQ_MODEL : OPENAI_MODEL),
     today:Number(x.today_count||0), month:Number(x.month_count||0),
     inputTokens:Number(x.input_token_count||0), outputTokens:Number(x.output_token_count||0),
     dailyLimit:AI_DAILY_REQUEST_LIMIT
