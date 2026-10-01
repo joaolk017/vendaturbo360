@@ -1,7 +1,7 @@
 (function(){
   if(window.__AT360_VERTICALS__)return;
   window.__AT360_VERTICALS__=true;
-  const commerce=new Set(['marmitex','restaurante','acai','loja']);
+  const commerce=new Set(['marmitex','restaurante','acai','loja','adega','tabacaria']);
   const schedule=new Set(['barbearia','estetica','clinica','oficina','imobiliaria']);
   function apply(){
     const t=config?.template||'barbearia';
