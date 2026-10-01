@@ -37,7 +37,7 @@
 
     const success=document.createElement('section');
     success.className='booking-success';success.id='bookingSuccess';
-    success.innerHTML='<div class="check">✓</div><h3>Horário marcado!</h3><p>Seu agendamento foi registrado e o estabelecimento já pode receber a notificação.</p><div class="booking-code" id="bookingCode"></div><p id="bookingSuccessText"></p>';
+    success.innerHTML='<div class="check">✓</div><h3>Horário marcado!</h3><p>Seu agendamento foi registrado e o estabelecimento já pode receber a notificação.</p><div class="booking-code" id="bookingCode"></div><p id="bookingSuccessText"></p><div class="booking-pix" id="bookingPix"><img id="bookingPixQr"><div><b style="font-size:11px">⚡ Pague com PIX</b><p style="margin:4px 0 6px;font-size:9px">A confirmação será automática.</p><div class="booking-pix-code" id="bookingPixCode"></div><button id="bookingPixCopy">Copiar PIX</button><div class="booking-pix-paid" id="bookingPixPaid">✓ Pagamento confirmado</div></div></div>';
 
     const chat=e('chat');
     if(chat){chat.parentNode.insertBefore(section,chat);chat.parentNode.insertBefore(success,chat)}
@@ -98,6 +98,24 @@
       '<div><span>Duração</span><b>'+Number(s?.duration||30)+' min</b></div>'+
       '<div><span>Valor</span><b class="booking-price">'+(Number(s?.price||0)>0?money(s.price):'Consulte o estabelecimento')+'</b></div>';
   }
+  let bookingPaymentPoll=null;
+  function showBookingPix(a){
+    if(!a?.pix?.brCode)return;
+    e('bookingPixCode').textContent=a.pix.brCode;
+    e('bookingPixQr').src='/api/qr?data='+encodeURIComponent(a.pix.brCode);
+    e('bookingPix').classList.add('show');
+    e('bookingPixCopy').onclick=async()=>{try{await navigator.clipboard.writeText(a.pix.brCode);e('bookingPixCopy').textContent='PIX copiado ✓';setTimeout(()=>e('bookingPixCopy').textContent='Copiar PIX',1600)}catch{}};
+    clearInterval(bookingPaymentPoll);let n=0;
+    bookingPaymentPoll=setInterval(async()=>{
+      n++;
+      try{
+        const r=await fetch('/api/public/bot/'+encodeURIComponent(botId)+'/appointments/'+encodeURIComponent(a.id)+'/status');
+        const d=await r.json().catch(()=>({}));
+        if(r.ok&&d.paymentStatus==='paid'){clearInterval(bookingPaymentPoll);e('bookingPixPaid').classList.add('show')}
+      }catch{}
+      if(n>=200)clearInterval(bookingPaymentPoll);
+    },3000);
+  }
   async function submitBooking(){
     const err=e('bookingError');err.textContent='';
     if(!selectedTime){err.textContent='Escolha um horário disponível.';return}
@@ -118,6 +136,7 @@
       const a=data.appointment;
       e('bookingCode').textContent=a.code;
       e('bookingSuccessText').textContent=a.serviceName+' • '+String(a.date).split('-').reverse().join('/')+' às '+a.time+' • '+a.professionalName;
+      if(a.pix?.brCode)showBookingPix(a);
       e('booking360').classList.remove('show');e('bookingSuccess').classList.add('show');e('bookingSuccess').scrollIntoView({behavior:'smooth'});
       selectedTime='';
     }catch(ex){err.textContent=ex.message;loadSlots()}
