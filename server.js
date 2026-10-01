@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+const QRCode = require('qrcode');
 
 const PORT = process.env.PORT || 3000;
 const publicDir = __dirname;
@@ -587,6 +588,24 @@ async function getInsights(userId) {
 async function handleApi(req, res, urlPath) {
   if (req.method === 'GET' && urlPath === '/api/health') {
     return json(res, 200, { ok: true, database: pool ? 'configured' : 'demo-memory', engine: '360' });
+  }
+
+  if (req.method === 'GET' && urlPath === '/api/qr') {
+    try {
+      const reqUrl = new URL(req.url, 'http://localhost');
+      const data = String(reqUrl.searchParams.get('data') || '').trim().slice(0, 2000);
+      if (!data) return json(res, 400, { error: 'Link não informado.' });
+      const svg = await QRCode.toString(data, { type:'svg', width:260, margin:1, errorCorrectionLevel:'M' });
+      res.writeHead(200, {
+        'Content-Type':'image/svg+xml; charset=utf-8',
+        'Cache-Control':'public, max-age=300'
+      });
+      res.end(svg);
+      return;
+    } catch (e) {
+      console.error('Falha ao gerar QR Code:', e.message);
+      return json(res, 500, { error: 'Não foi possível gerar o QR Code.' });
+    }
   }
 
   const publicBotMatch = urlPath.match(/^\/api\/public\/bot\/([^/]+)$/);
