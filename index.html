@@ -99,7 +99,7 @@
 <body>
 <div class="overlay" id="overlay" onclick="toggleSidebar(false)"></div>
 <div class="app">
-  <aside class="sidebar" id="sidebar">
+  <aside class="sidebar" id="sidebar"><button class="mobile-sidebar-close" onclick="toggleSidebar(false)" aria-label="Fechar menu">×</button>
     <div class="brand"><div class="brand-mark">A</div><div><strong>AtendeBot 360</strong><span>Central de atendimento</span></div></div>
     <div class="workspace"><div class="avatar">AB</div><div><b id="sideBusiness">Barbearia Demo</b><small id="sideModel">Modelo Barbearia</small></div></div>
     <button class="create-side" onclick="startWizard()">＋ Criar meu atendente<span>Configure em poucos minutos</span></button>
@@ -245,7 +245,7 @@ let metrics=load('at360_metrics')||{chats:0,whatsapp:0};
 let pendingLead=false,wizardStep=1,wizardTemplate=config.template||'barbearia',installMode='site';
 
 function showToast(t='Pronto!'){const el=$('toast');el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1800)}
-function toggleSidebar(open){$('sidebar').classList.toggle('open',open);$('overlay').classList.toggle('show',open)}
+function toggleSidebar(open){$('sidebar').classList.toggle('open',open);$('overlay').classList.toggle('show',open);document.body.classList.toggle('sidebar-open',open)}
 function goView(name){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.nav-btn[data-view]').forEach(b=>b.classList.remove('active'));$('view-'+name).classList.add('active');document.querySelector('.nav-btn[data-view="'+name+'"]')?.classList.add('active');$('topTitle').textContent=viewMeta[name][0];$('topSubtitle').textContent=viewMeta[name][1];toggleSidebar(false);if(name==='install')refreshPublishTools();if(name==='orders')loadOrders();window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('.nav-btn[data-view]').forEach(btn=>btn.addEventListener('click',()=>goView(btn.dataset.view)));
 function money(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
