@@ -317,4 +317,295 @@
     e.preventDefault();const input=document.getElementById('simInput'),msg=input.value.trim();if(!msg)return;input.value='';simAdd(msg,'user');
     const result=await simulate(msg);simHistory.push({role:'user',content:msg});updateSimEngine(result);simAdd(result.reply||'Não consegui responder.','bot',simEngineLabel(result));simHistory.push({role:'bot',content:result.reply||''});radar(result);
   });
+
+  // === AtendeBot 360 Executive Visual System ===
+  function installExecutiveVisualSystem(){
+    if(document.getElementById('at360-executive-style'))return;
+    const style=document.createElement('style');
+    style.id='at360-executive-style';
+    style.textContent=\`
+      :root{
+        --bg:#f5f7fb;--surface:#ffffff;--ink:#0b1220;--muted:#667085;--line:#e7eaf0;
+        --nav:#09111f;--brand:#4f46e5;--brand2:#7c3aed;--green:#12b76a;
+        --shadow:0 12px 40px rgba(16,24,40,.07);--shadow-lg:0 24px 70px rgba(15,23,42,.13)
+      }
+      body{
+        background:
+          radial-gradient(circle at 78% 0%,rgba(99,102,241,.08),transparent 28%),
+          radial-gradient(circle at 42% 12%,rgba(14,165,233,.045),transparent 24%),
+          #f6f8fc;
+        letter-spacing:-.005em
+      }
+      ::selection{background:#c7d2fe;color:#1e1b4b}
+      .app{grid-template-columns:276px 1fr}
+      .sidebar{
+        padding:18px 14px 16px;
+        background:
+          radial-gradient(circle at 20% 0%,rgba(99,102,241,.22),transparent 30%),
+          linear-gradient(180deg,#09111f 0%,#0b1425 55%,#0b1220 100%);
+        border-right:1px solid rgba(255,255,255,.05);
+        box-shadow:20px 0 55px rgba(15,23,42,.06)
+      }
+      .brand{padding:5px 8px 18px;gap:12px}
+      .brand-mark,.mobile-brand-mark{
+        background:linear-gradient(135deg,#6366f1 0%,#7c3aed 55%,#a855f7 100%);
+        box-shadow:0 12px 32px rgba(99,102,241,.38),inset 0 1px 0 rgba(255,255,255,.25);
+        position:relative;overflow:hidden
+      }
+      .brand-mark:after,.mobile-brand-mark:after{
+        content:"";position:absolute;inset:-35%;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.32),transparent 65%);transform:translateX(-70%) rotate(12deg);animation:at360shine 7s ease-in-out infinite
+      }
+      @keyframes at360shine{0%,72%,100%{transform:translateX(-90%) rotate(12deg)}84%{transform:translateX(95%) rotate(12deg)}}
+      .brand strong{font-size:15px;letter-spacing:-.02em}
+      .brand span{font-size:9.5px;color:#98a2b3}
+      .at360-pro-badge{display:inline-flex;margin-left:6px;vertical-align:middle;padding:3px 6px;border-radius:999px;background:rgba(129,140,248,.16);border:1px solid rgba(165,180,252,.22);color:#c7d2fe;font-size:7px;font-weight:900;letter-spacing:.08em}
+      .workspace{
+        margin:0 3px 14px;padding:12px;border-radius:16px;
+        background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.035));
+        border:1px solid rgba(255,255,255,.075);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)
+      }
+      .workspace .avatar{background:linear-gradient(135deg,#14b8a6,#22c55e);box-shadow:0 8px 20px rgba(16,185,129,.18)}
+      .workspace b{font-size:12px}.workspace small{font-size:9px;color:#98a2b3}
+      .create-side{
+        margin:0 3px 11px;padding:12px 13px;border-radius:14px;
+        background:linear-gradient(135deg,rgba(99,102,241,.30),rgba(124,58,237,.16));
+        border:1px solid rgba(165,180,252,.24);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+        transition:.18s ease
+      }
+      .create-side:hover{transform:translateY(-1px);border-color:rgba(199,210,254,.4)}
+      .nav-title{font-size:8px;letter-spacing:.18em;color:#667085;padding:0 12px;margin:15px 0 7px}
+      .nav-btn{
+        min-height:42px;margin:2px 0;border-radius:12px;padding:8px 10px;color:#aeb9cc;font-size:11.5px;
+        transition:.16s ease
+      }
+      .nav-btn .ico{
+        width:28px;height:28px;border-radius:9px;display:grid;place-items:center;
+        background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.035);font-size:12px
+      }
+      .nav-btn:hover{background:rgba(255,255,255,.06);color:#fff;transform:translateX(2px)}
+      .nav-btn.active{
+        color:#fff;background:linear-gradient(90deg,rgba(99,102,241,.24),rgba(124,58,237,.08));
+        box-shadow:inset 0 0 0 1px rgba(165,180,252,.10),0 8px 20px rgba(0,0,0,.08)
+      }
+      .nav-btn.active .ico{background:linear-gradient(135deg,#6366f1,#7c3aed);border-color:transparent;box-shadow:0 6px 14px rgba(99,102,241,.24)}
+      .sidebar-foot .plan{
+        border-radius:16px;background:linear-gradient(145deg,rgba(99,102,241,.16),rgba(255,255,255,.035));
+        border-color:rgba(165,180,252,.16);padding:14px
+      }
+      .sidebar-foot .plan strong{font-size:11px}.sidebar-foot .plan p{font-size:9px;line-height:1.55;color:#98a2b3}
+      .sidebar-foot .plan button{border-radius:10px;padding:9px 10px;font-size:9px;background:#f8fafc}
+      .topbar{
+        height:76px;padding:0 30px;background:rgba(255,255,255,.82);backdrop-filter:blur(22px) saturate(1.25);
+        border-bottom:1px solid rgba(226,232,240,.82);box-shadow:0 6px 28px rgba(15,23,42,.025)
+      }
+      .page-title strong{font-size:14px;letter-spacing:-.015em}.page-title span{font-size:10px}
+      .status-pill{
+        padding:8px 11px;background:rgba(236,253,245,.8);border-color:#d1fadf;color:#027a48;font-size:10px;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.8)
+      }
+      .status-pill .dot{box-shadow:0 0 0 4px rgba(34,197,94,.10)}
+      .icon-btn{border-color:#eaecf0;border-radius:11px;background:rgba(255,255,255,.9);transition:.15s}
+      .icon-btn:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(15,23,42,.08)}
+      .profile b{font-size:10.5px}.profile small{font-size:8.5px}
+      .content{padding:30px 32px 52px;max-width:1540px}
+      .heading{margin-bottom:22px;align-items:center}
+      .heading h1{font-size:30px;letter-spacing:-.045em;color:#101828}
+      .heading p{font-size:11px;line-height:1.55;color:#667085}
+      .btn{
+        border-radius:11px;padding:10px 14px;font-size:10px;letter-spacing:-.005em;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease
+      }
+      .btn:hover{transform:translateY(-1px)}
+      .btn.primary{background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 8px 20px rgba(79,70,229,.22),inset 0 1px 0 rgba(255,255,255,.18)}
+      .btn.secondary{border-color:#e4e7ec;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+      .hero{
+        position:relative;overflow:hidden;border-radius:26px;padding:30px;
+        background:
+          radial-gradient(circle at 86% 14%,rgba(129,140,248,.38),transparent 26%),
+          radial-gradient(circle at 56% 120%,rgba(124,58,237,.34),transparent 36%),
+          linear-gradient(135deg,#101828 0%,#162033 47%,#29255f 100%);
+        box-shadow:0 24px 70px rgba(15,23,42,.17);border:1px solid rgba(255,255,255,.07)
+      }
+      .hero:after{content:"";position:absolute;width:360px;height:360px;border:1px solid rgba(255,255,255,.07);border-radius:50%;right:-150px;top:-175px;box-shadow:0 0 0 48px rgba(255,255,255,.018),0 0 0 96px rgba(255,255,255,.012)}
+      .hero>div{position:relative;z-index:1}
+      .hero small{font-size:8.5px;letter-spacing:.16em;color:#c7d2fe}
+      .hero h2{font-size:34px;max-width:820px;line-height:1.03;letter-spacing:-.052em}
+      .hero p{font-size:11.5px;max-width:750px;color:#cbd5e1}
+      .hero-proof{gap:10px}
+      .hero-proof div{
+        padding:14px;border-radius:15px;background:rgba(255,255,255,.075);border:1px solid rgba(255,255,255,.09);
+        backdrop-filter:blur(10px);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)
+      }
+      .hero-proof b{font-size:21px}.hero-proof span{font-size:8.5px;color:#b8c2d4}
+      .at360-system-strip{
+        display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0 18px
+      }
+      .at360-system-item{
+        display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:14px;background:rgba(255,255,255,.86);
+        border:1px solid #e7eaf0;box-shadow:0 5px 18px rgba(16,24,40,.035)
+      }
+      .at360-system-icon{width:31px;height:31px;border-radius:10px;display:grid;place-items:center;background:#eef2ff;color:#4338ca;font-size:13px}
+      .at360-system-item b{display:block;font-size:9.5px;color:#344054}.at360-system-item span{display:block;font-size:7.8px;color:#98a2b3;margin-top:2px}
+      .at360-system-item i{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#12b76a;box-shadow:0 0 0 4px rgba(18,183,106,.09)}
+      .kpis{gap:12px}
+      .kpi{
+        border:1px solid #e7eaf0;border-radius:19px;padding:16px;background:rgba(255,255,255,.90);
+        box-shadow:0 8px 26px rgba(16,24,40,.045);position:relative;overflow:hidden;transition:.16s
+      }
+      .kpi:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(16,24,40,.075)}
+      .kpi:after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,#6366f1,#a855f7);opacity:.55}
+      .kpi-icon{border-radius:11px}.kpi small{font-size:9px;color:#667085}.kpi strong{font-size:25px;color:#101828;letter-spacing:-.045em}.kpi .trend{font-size:7.5px}
+      .panel,.intel-card,.mg-panel,.ops-panel{
+        border-color:#e7eaf0!important;border-radius:20px!important;background:rgba(255,255,255,.92)!important;
+        box-shadow:0 10px 30px rgba(16,24,40,.045)!important
+      }
+      .panel-head,.intel-card-head,.mg-head,.ops-panel-head{border-bottom-color:#eef1f5!important;padding:15px 17px!important}
+      .panel-head h3,.intel-card-head h3,.mg-head h3,.ops-panel-head h3{font-size:12px!important;color:#101828}
+      .panel-head span,.intel-card-head p,.mg-head p,.ops-panel-head p{font-size:9px!important;color:#98a2b3!important}
+      .panel-body,.intel-body,.mg-body{padding:17px!important}
+      input,textarea,select{
+        border-color:#dfe3ea!important;border-radius:10px!important;box-shadow:0 1px 2px rgba(16,24,40,.025);
+        transition:border-color .15s ease,box-shadow .15s ease
+      }
+      input:focus,textarea:focus,select:focus{border-color:#a5b4fc!important;box-shadow:0 0 0 3px rgba(99,102,241,.09)!important;outline:none}
+      .field,.intel-field,.mg-field,.agenda-field{color:#475467!important;font-size:9px!important}
+      .order-card,.appointment-card,.customer-card,.team-card,.stock-card,.catalog-card{
+        border-color:#e7eaf0!important;border-radius:16px!important;box-shadow:0 4px 15px rgba(16,24,40,.025);
+        transition:.16s ease
+      }
+      .order-card:hover,.appointment-card:hover,.customer-card:hover,.team-card:hover,.stock-card:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(16,24,40,.06)}
+      .order-status,.badge,.stock-badge,.ai-state,.heat,.live-pill{letter-spacing:.015em}
+      .table th{background:#f9fafb;color:#667085;font-size:8px}.table td{font-size:10px;border-bottom-color:#f0f2f5}
+      .toast{border-radius:12px!important;box-shadow:0 18px 45px rgba(15,23,42,.22)!important}
+      .floating-chat .launcher{box-shadow:0 14px 35px rgba(79,70,229,.32)!important}
+      .chatbox{border:1px solid #e4e7ec!important;box-shadow:0 26px 80px rgba(15,23,42,.20)!important}
+      .ops-hero{
+        background:radial-gradient(circle at 88% 10%,rgba(99,102,241,.34),transparent 28%),linear-gradient(135deg,#101828,#16213a 62%,#30266b)!important;
+        border-radius:26px!important;box-shadow:0 24px 70px rgba(15,23,42,.15)!important
+      }
+      .ops-kpi,.growth-kpi,.mg-kpi{border-color:#e7eaf0!important;box-shadow:0 7px 24px rgba(16,24,40,.035)!important}
+      .notify-card,.pix-box,.brain-score{
+        background:radial-gradient(circle at 90% 0%,rgba(99,102,241,.26),transparent 30%),linear-gradient(145deg,#101828,#1d2939)!important
+      }
+
+      /* Login / first impression */
+      .at-auth-overlay{
+        background:
+          radial-gradient(circle at 16% 18%,rgba(99,102,241,.26),transparent 27%),
+          radial-gradient(circle at 88% 90%,rgba(124,58,237,.18),transparent 28%),
+          linear-gradient(135deg,#080f1d,#111b2f 62%,#1f1a4b)!important
+      }
+      .at-auth-card{max-width:1040px!important;border-radius:30px!important;box-shadow:0 40px 120px rgba(0,0,0,.38)!important;border:1px solid rgba(255,255,255,.08)}
+      .at-auth-brand{
+        padding:44px!important;background:
+          radial-gradient(circle at 86% 15%,rgba(99,102,241,.28),transparent 26%),
+          linear-gradient(145deg,#0d1526,#18223a)!important
+      }
+      .at-auth-logo i{box-shadow:0 12px 28px rgba(99,102,241,.35)}
+      .at-auth-brand h2{font-size:39px!important;line-height:1.01!important;letter-spacing:-.055em!important;max-width:470px}
+      .at-auth-brand p{font-size:12px!important;max-width:470px;color:#b9c4d5!important}
+      .at-auth-point{border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.045);padding:10px 11px;border-radius:12px;font-size:10px!important}
+      .at-auth-formwrap{padding:44px!important}
+      .at-auth-pane h3{font-size:28px!important;letter-spacing:-.045em!important}
+      .at-auth-submit{border-radius:11px!important;box-shadow:0 10px 24px rgba(79,70,229,.20)}
+      .at-auth-demo{border-color:#e7eaf0!important;background:#f9fafb!important;border-radius:12px!important}
+
+      @media(max-width:1100px){
+        .app{grid-template-columns:238px 1fr}.content{padding:24px}.at360-system-strip{grid-template-columns:1fr 1fr}
+        .hero h2{font-size:30px}.sidebar{padding-left:10px;padding-right:10px}
+      }
+      @media(max-width:820px){
+        .app{display:block}.content{padding:18px 14px 40px}.topbar{height:64px;padding:0 14px}.heading{align-items:flex-start}.heading h1{font-size:24px}
+        .hero{padding:20px;border-radius:20px}.hero h2{font-size:27px}.hero-proof{grid-template-columns:repeat(3,1fr)}
+        .at360-system-strip{grid-template-columns:1fr 1fr;gap:7px}.at360-system-item{padding:9px}
+        .kpis{grid-template-columns:1fr 1fr}.kpi{min-height:108px}
+        .at-auth-formwrap{padding:26px!important}
+      }
+      @media(max-width:520px){
+        .content{padding:14px 11px 38px}.heading{margin-bottom:16px}.heading h1{font-size:22px}.heading p{font-size:10px}
+        .hero{padding:18px;border-radius:18px}.hero h2{font-size:24px}.hero p{font-size:10.5px}.hero-proof{grid-template-columns:1fr;gap:6px}
+        .hero-proof div{padding:10px}.hero-proof b{font-size:17px}.at360-system-strip{grid-template-columns:1fr}
+        .kpis{gap:8px}.kpi{padding:12px;border-radius:15px}.kpi strong{font-size:21px}
+        .panel,.intel-card,.mg-panel,.ops-panel{border-radius:16px!important}
+        .at-auth-brand{padding:24px!important}.at-auth-brand h2{font-size:29px!important}.at-auth-formwrap{padding:22px!important}
+      }
+    \`;
+    document.head.appendChild(style);
+  }
+
+  function enhanceExecutiveCopy(){
+    const brand=document.querySelector('.brand');
+    if(brand){
+      const strong=brand.querySelector('strong');
+      if(strong&&!strong.querySelector('.at360-pro-badge'))strong.insertAdjacentHTML('beforeend','<span class="at360-pro-badge">BUSINESS OS</span>');
+      const sub=brand.querySelector('span:not(.at360-pro-badge)');
+      if(sub)sub.textContent='Central operacional inteligente';
+    }
+    const topSub=document.getElementById('topSubtitle');
+    if(topSub&&topSub.textContent==='Acompanhe clientes e conversões')topSub.textContent='Operação, atendimento e crescimento em tempo real';
+
+    const dash=document.getElementById('view-dashboard');
+    if(dash){
+      const h=dash.querySelector('.heading h1'),p=dash.querySelector('.heading p');
+      if(h)h.textContent='Central de comando';
+      if(p)p.textContent='Tudo que precisa da sua atenção, do atendimento ao caixa.';
+      const hero=dash.querySelector('.hero');
+      if(hero){
+        const small=hero.querySelector('small'),title=hero.querySelector('h2'),copy=hero.querySelector('p');
+        if(small)small.textContent='ATENDEBOT 360 • OPERAÇÃO CONECTADA';
+        if(title)title.textContent='Atendimento, vendas e operação funcionando como um único sistema.';
+        if(copy)copy.textContent='Centralize conversas, clientes, pedidos, agenda, pagamentos, equipe e estoque sem perder o controle do que acontece no negócio.';
+        if(!document.getElementById('at360SystemStrip')){
+          const strip=document.createElement('div');strip.id='at360SystemStrip';strip.className='at360-system-strip';
+          strip.innerHTML=
+            '<div class="at360-system-item"><span class="at360-system-icon">◈</span><div><b>Assistente 360</b><span>Atendimento inteligente</span></div><i></i></div>'+
+            '<div class="at360-system-item"><span class="at360-system-icon">⚡</span><div><b>Central Operacional</b><span>Fila em tempo real</span></div><i></i></div>'+
+            '<div class="at360-system-item"><span class="at360-system-icon">R$</span><div><b>Financeiro 360</b><span>PIX e caixa integrados</span></div><i></i></div>'+
+            '<div class="at360-system-item"><span class="at360-system-icon">◎</span><div><b>Clientes 360</b><span>Histórico centralizado</span></div><i></i></div>';
+          hero.insertAdjacentElement('afterend',strip);
+        }
+      }
+    }
+
+    const plan=document.querySelector('.sidebar-foot .plan');
+    if(plan){
+      const title=plan.querySelector('strong'),copy=plan.querySelector('p'),button=plan.querySelector('button');
+      if(title)title.textContent='AtendeBot 360 Pro';
+      if(copy)copy.textContent='Central completa com automações, equipe, financeiro e operação integrada.';
+      if(button)button.textContent='Ver estrutura do plano';
+    }
+
+    const authBrand=document.querySelector('.at-auth-brand');
+    if(authBrand){
+      const h=authBrand.querySelector('h2'),p=authBrand.querySelector('p');
+      if(h)h.textContent='Seu negócio operando com padrão de empresa grande.';
+      if(p)p.textContent='Atendimento, pedidos, agenda, clientes, equipe, financeiro e estoque conectados em uma única central.';
+      const points=authBrand.querySelectorAll('.at-auth-point');
+      const copy=[
+        ['Central operacional','O que precisa de atenção aparece em uma única fila.'],
+        ['Automação de vendas','Pedidos, agenda e PIX seguem o fluxo automaticamente.'],
+        ['Gestão completa','Clientes, equipe, financeiro e estoque no mesmo sistema.']
+      ];
+      points.forEach((x,i)=>{if(copy[i])x.innerHTML='<span>✓</span><div><b>'+copy[i][0]+'</b><br>'+copy[i][1]+'</div>'});
+      const small=authBrand.querySelector('small');
+      if(small)small.textContent='AtendeBot 360 • Business Operating System';
+    }
+  }
+
+  function addExecutiveInteractions(){
+    document.querySelectorAll('.panel,.kpi,.ops-kpi,.mg-kpi,.growth-kpi').forEach(el=>{
+      if(el.dataset.executiveReady)return;el.dataset.executiveReady='1';
+    });
+    document.querySelectorAll('.nav-btn').forEach(btn=>{
+      if(btn.dataset.executiveReady)return;btn.dataset.executiveReady='1';
+      btn.addEventListener('mouseenter',()=>{const ico=btn.querySelector('.ico');if(ico)ico.style.transform='scale(1.04)'});
+      btn.addEventListener('mouseleave',()=>{const ico=btn.querySelector('.ico');if(ico)ico.style.transform=''});
+    });
+  }
+
+  installExecutiveVisualSystem();
+  enhanceExecutiveCopy();
+  addExecutiveInteractions();
+  setTimeout(()=>{enhanceExecutiveCopy();addExecutiveInteractions()},900);
+  setTimeout(()=>{enhanceExecutiveCopy();addExecutiveInteractions()},2200);
+
 })();
