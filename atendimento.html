@@ -162,11 +162,11 @@ el('sendOrder').onclick=async()=>{
 };
 function addMsg(text,type){const d=document.createElement('div');d.className='msg '+type;d.textContent=text;el('messages').appendChild(d);el('messages').scrollTop=el('messages').scrollHeight}
 el('chatForm').onsubmit=async e=>{
-  e.preventDefault();const input=el('chatInput'),message=input.value.trim();if(!message||!bot)return;input.value='';addMsg(message,'user');history.push({role:'user',content:message});
+  e.preventDefault();const input=el('chatInput'),message=input.value.trim();if(!message||!bot)return;input.value='';addMsg(message,'user');
   try{
-    const r=await fetch('/api/public/bot/'+encodeURIComponent(botId)+'/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:history.slice(-10),conversationId,isFirst:history.length===1})});
+    const r=await fetch('/api/public/bot/'+encodeURIComponent(botId)+'/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:history.slice(-10),conversationId,isFirst:history.length===0})});
     const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Não consegui responder agora.');
-    addMsg(data.reply,'bot');history.push({role:'bot',content:data.reply});
+    history.push({role:'user',content:message});addMsg(data.reply,'bot');history.push({role:'bot',content:data.reply});
   }catch(err){addMsg('Não consegui responder agora. Tente novamente em instantes.','bot')}
 };
 loadBot().catch(()=>{el('businessMeta').textContent='Não foi possível carregar este atendimento.'});
