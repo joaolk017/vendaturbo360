@@ -414,17 +414,17 @@ async function getAiUsageSummary(userId) {
   if (!pool) return { configured: !!OPENAI_API_KEY, model: OPENAI_MODEL, today:0, month:0, inputTokens:0, outputTokens:0, dailyLimit:AI_DAILY_REQUEST_LIMIT };
   const r = await pool.query(`
     SELECT
-      COUNT(*) FILTER (WHERE status='ok' AND created_at >= date_trunc('day', NOW()))::int today,
-      COUNT(*) FILTER (WHERE status='ok' AND created_at >= date_trunc('month', NOW()))::int month,
-      COALESCE(SUM(input_tokens) FILTER (WHERE status='ok' AND created_at >= date_trunc('month', NOW())),0)::bigint input_tokens,
-      COALESCE(SUM(output_tokens) FILTER (WHERE status='ok' AND created_at >= date_trunc('month', NOW())),0)::bigint output_tokens
+      COUNT(*) FILTER (WHERE status='ok' AND created_at >= date_trunc('day', NOW()))::int AS today_count,
+      COUNT(*) FILTER (WHERE status='ok' AND created_at >= date_trunc('month', NOW()))::int AS month_count,
+      COALESCE(SUM(input_tokens) FILTER (WHERE status='ok' AND created_at >= date_trunc('month', NOW())),0)::bigint AS input_token_count,
+      COALESCE(SUM(output_tokens) FILTER (WHERE status='ok' AND created_at >= date_trunc('month', NOW())),0)::bigint AS output_token_count
     FROM ai_usage WHERE user_id=$1
   `, [userId]);
   const x=r.rows[0]||{};
   return {
     configured: !!OPENAI_API_KEY, model: OPENAI_MODEL,
-    today:Number(x.today||0), month:Number(x.month||0),
-    inputTokens:Number(x.input_tokens||0), outputTokens:Number(x.output_tokens||0),
+    today:Number(x.today_count||0), month:Number(x.month_count||0),
+    inputTokens:Number(x.input_token_count||0), outputTokens:Number(x.output_token_count||0),
     dailyLimit:AI_DAILY_REQUEST_LIMIT
   };
 }
