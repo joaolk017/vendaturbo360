@@ -27,15 +27,15 @@
       <section class="at-auth-brand">
         <div>
           <div class="at-auth-logo"><i>A</i><b>AtendeBot 360</b></div>
-          <h2>Seu atendimento, seus leads e suas vendas em um só lugar.</h2>
-          <p>Crie um atendente virtual para responder clientes, captar oportunidades e acompanhar o que realmente gera resultado.</p>
+          <h2>Seu negócio operando com padrão de empresa grande.</h2>
+          <p>Atendimento, pedidos, agenda, clientes, equipe, financeiro e estoque conectados em uma única central operacional.</p>
           <div class="at-auth-points">
             <div class="at-auth-point"><span>✓</span><div><b>Configuração rápida</b><br>Modelos prontos por segmento.</div></div>
             <div class="at-auth-point"><span>✓</span><div><b>Leads organizados</b><br>Contatos e interesses centralizados.</div></div>
             <div class="at-auth-point"><span>✓</span><div><b>Funil de vendas</b><br>Do atendimento até a conversão.</div></div>
           </div>
         </div>
-        <small style="color:#94a3b8">AtendeBot 360 • Plataforma demonstrativa SaaS</small>
+        <div><a href="/apresentacao.html" style="display:inline-flex;align-items:center;gap:7px;color:#c7d2fe;font-size:10px;font-weight:900;margin-bottom:12px">Conhecer a plataforma completa →</a><br><small style="color:#94a3b8">AtendeBot 360 • Business Operating System</small></div>
       </section>
       <section class="at-auth-formwrap">
         <div class="at-auth-tabs">
