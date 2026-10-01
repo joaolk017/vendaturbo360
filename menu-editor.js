@@ -13,6 +13,9 @@
     '.catalog-list{display:grid;gap:11px}.catalog-card{border:1px solid #e2e8f0;border-radius:16px;padding:13px;background:#fff}.catalog-top{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:start}.catalog-thumb{width:64px;height:64px;border-radius:13px;background:#f1f5f9;border:1px solid #e2e8f0;overflow:hidden;display:grid;place-items:center;font-size:25px}.catalog-thumb img{width:100%;height:100%;object-fit:cover}.catalog-fields{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(105px,.7fr);gap:9px}.catalog-fields .wide{grid-column:1/-1}.catalog-actions{display:flex;gap:6px;align-items:center}.catalog-delete{width:34px;height:34px;border:1px solid #fecdd3;background:#fff1f2;color:#be123c;border-radius:10px;font-weight:900}.catalog-availability{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:10px;font-weight:800;color:#475569}.catalog-empty{padding:26px;border:1px dashed #cbd5e1;border-radius:15px;text-align:center;color:#64748b;font-size:11px}.menu-toolbar{display:flex;gap:8px;flex-wrap:wrap}.menu-preview{position:sticky;top:92px;background:linear-gradient(145deg,#0f172a,#1e293b);color:#fff;border-radius:20px;padding:18px}.menu-preview h3{margin:0 0 5px}.menu-preview>p{margin:0 0 15px;color:#cbd5e1;font-size:11px;line-height:1.5}.menu-preview-row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:11px}.menu-preview-row span{color:#cbd5e1}.menu-preview-items{display:grid;gap:7px;margin-top:13px}.menu-preview-item{padding:9px 10px;border-radius:11px;background:rgba(255,255,255,.07);display:flex;justify-content:space-between;gap:8px;font-size:10px}.menu-preview-item b{font-size:10px}.menu-hint{margin-top:13px;padding:11px;border-radius:12px;background:#eef2ff;border:1px solid #c7d2fe;color:#4338ca;font-size:10px;line-height:1.5}'+
     '@media(max-width:980px){.menu-layout{grid-template-columns:1fr}.menu-preview{position:static}.menu-settings{grid-template-columns:1fr 1fr}}@media(max-width:620px){.menu-settings{grid-template-columns:1fr}.catalog-top{grid-template-columns:54px minmax(0,1fr) auto}.catalog-thumb{width:54px;height:54px}.catalog-fields{grid-template-columns:1fr}.catalog-fields .wide{grid-column:auto}.menu-toolbar{display:grid;grid-template-columns:1fr 1fr}.menu-toolbar .btn{width:100%}}';
   document.head.appendChild(css);
+  const regulatedCss=document.createElement('style');
+  regulatedCss.textContent='.regulated-banner{display:none;padding:12px 13px;border-radius:13px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:10px;line-height:1.5;margin-bottom:14px}.regulated-banner.show{display:block}';
+  document.head.appendChild(regulatedCss);
 
   function esc(s){
     return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});
@@ -51,7 +54,7 @@
     if(!orders) return;
     const b=document.createElement('button');
     b.className='nav-btn';b.dataset.view='menu';
-    b.innerHTML='<span class="ico">🍽</span>Cardápio & Delivery';
+    b.innerHTML='<span class="ico">🍽</span><span id="menuNavLabel">Cardápio & Delivery</span>';
     orders.after(b);
     b.addEventListener('click',function(){goView('menu')});
   }
@@ -60,15 +63,16 @@
     const view=document.createElement('section');
     view.className='view';view.id='view-menu';
     view.innerHTML=
-      '<div class="heading"><div><h1>Cardápio & Delivery</h1><p>Edite produtos, adicionais, preços e regras do pedido sem mexer em código.</p></div><div class="heading-actions"><button class="btn secondary" id="menuOpenPublic">↗ Ver como cliente</button><button class="btn primary" id="menuSaveTop">Salvar cardápio</button></div></div>'+
+      '<div class="heading"><div><h1 id="menuPageTitle">Cardápio & Delivery</h1><p id="menuPageSubtitle">Edite produtos, adicionais, preços e regras do pedido sem mexer em código.</p></div><div class="heading-actions"><button class="btn secondary" id="menuOpenPublic">↗ Ver como cliente</button><button class="btn primary" id="menuSaveTop">Salvar catálogo</button></div></div>'+
+      '<div class="regulated-banner" id="regulatedBanner"></div>'+
       '<div class="menu-layout"><div class="menu-stack">'+
         '<div class="panel"><div class="panel-head"><div><h3>Configuração do delivery</h3><span>Horário, taxa e pedido mínimo</span></div></div><div class="panel-body">'+
           '<div class="menu-switch"><div><b>Receber pedidos online</b><small>Quando desligado, o botão “Fazer pedido” some da página pública.</small></div><input class="menu-toggle" type="checkbox" id="menuEnabled"></div>'+
           '<div class="menu-settings" style="margin-top:14px"><label class="menu-field">Abre pedidos às<input type="time" id="menuOpen"></label><label class="menu-field">Encerra pedidos às<input type="time" id="menuClose"></label><label class="menu-field">Taxa de entrega (R$)<input type="number" min="0" step="0.01" id="menuFee"></label><label class="menu-field">Pedido mínimo (R$)<input type="number" min="0" step="0.01" id="menuMinimum"></label></div>'+
         '</div></div>'+
-        '<div class="panel"><div class="panel-head"><div><h3>Pratos e produtos</h3><span>Itens principais que o cliente pode escolher</span></div><button class="btn secondary" id="addProduct">＋ Adicionar prato</button></div><div class="panel-body"><div class="catalog-list" id="productList"></div></div></div>'+
+        '<div class="panel"><div class="panel-head"><div><h3 id="menuProductsTitle">Produtos</h3><span id="menuProductsSubtitle">Itens principais que o cliente pode escolher</span></div><button class="btn secondary" id="addProduct">＋ Adicionar produto</button></div><div class="panel-body"><div class="catalog-list" id="productList"></div></div></div>'+
         '<div class="panel"><div class="panel-head"><div><h3>Adicionais</h3><span>Extras como bebida, sobremesa, ovo ou complemento</span></div><button class="btn secondary" id="addAddon">＋ Adicionar adicional</button></div><div class="panel-body"><div class="catalog-list" id="addonList"></div><div class="menu-hint">Os adicionais aparecem separados na página do cliente, mas entram no mesmo resumo e no total do pedido.</div></div></div>'+
-        '<div class="menu-toolbar"><button class="btn secondary" id="menuAddProductBottom">＋ Novo prato</button><button class="btn secondary" id="menuAddAddonBottom">＋ Novo adicional</button><button class="btn primary" id="menuSaveBottom">Salvar alterações</button></div>'+
+        '<div class="menu-toolbar"><button class="btn secondary" id="menuAddProductBottom">＋ Novo produto</button><button class="btn secondary" id="menuAddAddonBottom">＋ Novo adicional</button><button class="btn primary" id="menuSaveBottom">Salvar alterações</button></div>'+
       '</div><div><div class="menu-preview"><h3>Prévia do cardápio</h3><p>Resumo do que ficará disponível para o cliente.</p><div id="menuPreviewStats"></div><div class="menu-preview-items" id="menuPreviewItems"></div><button class="btn primary" style="width:100%;margin-top:14px" id="menuPreviewOpen">Abrir página do cliente</button></div></div></div>';
     const install=document.getElementById('view-install');
     const content=document.querySelector('.content');
@@ -88,8 +92,23 @@
   }
   function render(){
     const d=getDelivery();
+    const regulated=!!config.ageRestricted;
+    const tobacco=config.regulatedCategory==='tobacco';
+    const title=document.getElementById('menuPageTitle'),sub=document.getElementById('menuPageSubtitle'),nav=document.getElementById('menuNavLabel');
+    const pTitle=document.getElementById('menuProductsTitle'),pSub=document.getElementById('menuProductsSubtitle'),banner=document.getElementById('regulatedBanner');
+    if(title)title.textContent=tobacco?'Catálogo interno & Operação 18+':regulated?'Catálogo & Delivery 18+':'Cardápio & Delivery';
+    if(sub)sub.textContent=tobacco?'Gerencie estoque e itens internos. A vitrine pública de fumígenos fica desativada por padrão.':regulated?'Gerencie itens, preços, entrega e regras de maioridade.':'Edite produtos, adicionais, preços e regras do pedido sem mexer em código.';
+    if(nav)nav.textContent=tobacco?'Catálogo interno 18+':regulated?'Catálogo & Delivery 18+':'Cardápio & Delivery';
+    if(pTitle)pTitle.textContent=tobacco?'Produtos internos':'Produtos do catálogo';
+    if(pSub)pSub.textContent=tobacco?'Controle interno de itens permitidos no estabelecimento':'Itens principais que o cliente pode escolher';
+    if(banner){
+      if(regulated){
+        banner.classList.add('show');
+        banner.innerHTML=tobacco?'🔞 <b>Tabacaria:</b> venda somente para maiores de 18 anos. A vitrine pública de fumígenos fica bloqueada; vapes/pods não devem ser cadastrados para comercialização.':'🔞 <b>Adega:</b> venda e entrega somente para maiores de 18 anos. O cliente precisa confirmar maioridade e o estabelecimento deve conferir documento quando necessário.';
+      }else banner.classList.remove('show');
+    }
     const enabled=document.getElementById('menuEnabled');if(!enabled)return;
-    enabled.checked=!!d.enabled;
+    if(tobacco){d.enabled=false;enabled.checked=false;enabled.disabled=true;}else{enabled.disabled=false;enabled.checked=!!d.enabled;}
     document.getElementById('menuOpen').value=d.open||'11:00';
     document.getElementById('menuClose').value=d.close||'14:00';
     document.getElementById('menuFee').value=Number(d.deliveryFee||0);
