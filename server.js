@@ -1651,9 +1651,10 @@ async function createStaffAccess360(userId,teamMemberId,body){
   if(idx>=0)arr[idx]=row;else arr.push(row);mem.staffAccounts.set(userId,arr);return staffPublic(row);
 }
 async function updateStaffAccess360(userId,staffId,body){
-  const role=String(body.role||'attendant'),permissions=sanitizePermissions(body.permissions,role);
   if(pool){
     const r=await pool.query('SELECT * FROM staff_accounts WHERE id=$1 AND user_id=$2',[staffId,userId]);if(!r.rowCount)return null;
+    const role=body.role!=null?String(body.role):r.rows[0].role;
+    const permissions=Array.isArray(body.permissions)?sanitizePermissions(body.permissions,role):(Array.isArray(r.rows[0].permissions)?r.rows[0].permissions:[]);
     const active=typeof body.active==='boolean'?body.active:r.rows[0].active;
     if(body.password!=null&&String(body.password).length){
       if(String(body.password).length<6)throw new Error('A nova senha precisa ter pelo menos 6 caracteres.');
@@ -1662,7 +1663,7 @@ async function updateStaffAccess360(userId,staffId,body){
     }
     const u=await pool.query('UPDATE staff_accounts SET role=$1,permissions=$2,active=$3,updated_at=NOW() WHERE id=$4 RETURNING *',[role,JSON.stringify(permissions),active,staffId]);return staffPublic(u.rows[0]);
   }
-  const arr=mem.staffAccounts.get(userId)||[],x=arr.find(y=>y.id===staffId);if(!x)return null;x.role=role;x.permissions=permissions;if(typeof body.active==='boolean')x.active=body.active;if(body.password){x.salt=crypto.randomBytes(16).toString('hex');x.passwordHash=hashPassword(String(body.password),x.salt)}return staffPublic(x);
+  const arr=mem.staffAccounts.get(userId)||[],x=arr.find(y=>y.id===staffId);if(!x)return null;const role=body.role!=null?String(body.role):x.role;const permissions=Array.isArray(body.permissions)?sanitizePermissions(body.permissions,role):(x.permissions||[]);x.role=role;x.permissions=permissions;if(typeof body.active==='boolean')x.active=body.active;if(body.password){x.salt=crypto.randomBytes(16).toString('hex');x.passwordHash=hashPassword(String(body.password),x.salt)}return staffPublic(x);
 }
 function teamPublic(x){return {id:x.id,name:x.name,role:x.role,phone:x.phone||'',email:x.email||'',active:x.active!==false,createdAt:x.created_at||x.createdAt||new Date().toISOString(),access:x.access||null}}
 async function listTeam360(userId){
