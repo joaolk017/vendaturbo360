@@ -32,7 +32,64 @@
     .color-fields{display:grid;grid-template-columns:1fr 1fr;gap:15px}.color-field-wrap{display:flex;gap:10px;align-items:center;margin-top:7px;border:1px solid #dbe3ee;border-radius:12px;padding:7px 10px;background:#fff}.color-field-wrap input[type="color"]{width:38px;height:34px;padding:0;border:0;background:transparent;margin:0}.color-field-wrap span{font-size:11px;color:var(--muted);font-weight:700}
     @media(max-width:1100px){.app{grid-template-columns:210px 1fr}.kpis,.templates{grid-template-columns:1fr 1fr}.setup-grid,.install-grid{grid-template-columns:1fr}.phone{position:static;max-width:430px}.dashboard-grid,.hero{grid-template-columns:1fr}.segment-grid{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:760px){.app{display:block}.sidebar{position:fixed;left:-260px;width:250px;transition:.25s;z-index:60}.sidebar.open{left:0}.overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50}.overlay.show{display:block}.main{width:100%}.topbar{height:64px;padding:0 14px;position:relative;background:#fff;backdrop-filter:none}.mobile-menu{display:block}.mobile-brand{display:flex}.page-title,.status-pill{display:none}.profile{padding-left:8px}.profile b,.profile small{display:none}.content{padding:18px 14px 34px}.heading{align-items:flex-start;flex-direction:column;gap:14px;margin-bottom:18px}.heading h1{font-size:24px}.hero{padding:20px;border-radius:19px}.hero h2{font-size:24px}.hero-proof{grid-template-columns:1fr 1fr 1fr}.kpis,.templates,.form-grid,.settings-grid,.segment-grid,.funnel{grid-template-columns:1fr}.kpis{gap:10px}.kpi{padding:13px 15px;display:grid;grid-template-columns:42px 1fr auto;grid-template-rows:auto auto;column-gap:11px;align-items:center}.kpi-head{display:contents}.kpi-icon{grid-column:1;grid-row:1/3;width:38px;height:38px}.kpi .trend{grid-column:3;grid-row:1/3}.kpi small{grid-column:2;grid-row:1;font-size:11px}.kpi strong{grid-column:2;grid-row:2;font-size:23px;margin:0}.span2{grid-column:auto}.panel-head{padding:15px 16px}.panel-body{padding:16px}.phone{padding:8px}.phone-screen{min-height:560px}.floating-chat{right:14px;bottom:max(14px,env(safe-area-inset-bottom))}.launcher{width:52px;height:52px;border-radius:16px}.color-fields{grid-template-columns:1fr}.lead-toolbar{align-items:stretch;flex-direction:column}.search{max-width:none}.wizard-steps{grid-template-columns:1fr}.wizard-step:not(.active){display:none}}
-  </style>
+  
+    /* Mobile SaaS polish */
+    @media(max-width:760px){
+      body{background:#f6f8fc}
+      .content{padding:18px 14px 90px}
+      .heading{gap:12px;margin-bottom:16px}
+      .heading h1{font-size:23px;line-height:1.05}
+      .heading p{font-size:12px;line-height:1.45;max-width:340px}
+      .heading-actions{width:100%;display:grid;grid-template-columns:1fr 1.25fr;gap:8px}
+      .heading-actions .btn{width:100%;padding:10px 9px;font-size:12px;white-space:nowrap}
+
+      .hero{padding:17px;border-radius:18px;margin-bottom:14px;gap:14px}
+      .hero small{font-size:10px;letter-spacing:.08em}
+      .hero h2{font-size:21px;line-height:1.12;margin:7px 0 9px}
+      .hero p{font-size:11.5px;line-height:1.48;margin-bottom:12px}
+      .hero .btn{padding:10px 12px;font-size:12px}
+      .hero-proof{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+      .hero-proof div{padding:9px 7px;border-radius:11px;min-width:0}
+      .hero-proof b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .hero-proof span{font-size:8.5px;line-height:1.2;display:block;margin-top:3px}
+
+      .kpis{grid-template-columns:1fr 1fr;gap:9px}
+      .kpi{display:block;padding:12px;border-radius:15px;min-height:116px}
+      .kpi-head{display:flex;align-items:center;justify-content:space-between}
+      .kpi-icon{width:34px;height:34px;font-size:15px}
+      .kpi .trend{font-size:9px}
+      .kpi small{display:block;font-size:10px;margin-top:8px;line-height:1.25}
+      .kpi strong{display:block;font-size:20px;line-height:1.05;margin-top:4px}
+
+      .dashboard-grid{gap:12px;margin-top:12px}
+      .panel{border-radius:16px}
+      .panel-head{padding:13px 14px}
+      .panel-head h3{font-size:14px}
+      .panel-head span{font-size:10px}
+      .panel-body{padding:13px}
+      .funnel{grid-template-columns:1fr 1fr;gap:8px}
+      .funnel-card{padding:11px;border-radius:12px}
+      .funnel-card small{font-size:9px}
+      .funnel-card b{font-size:18px;margin-top:3px}
+      .progress{height:6px;margin-top:8px}
+
+      .preview-card{padding:13px}
+      .preview-chat .bubble{font-size:11px}
+      .preview-actions{grid-template-columns:1fr 1fr}
+      .preview-actions button{padding:8px 6px;font-size:9.5px}
+
+      #activityList{gap:10px}
+      .activity-item{gap:9px}
+      .activity-bullet{width:30px;height:30px;border-radius:9px}
+      .activity-item b{font-size:11px}
+      .activity-item p{font-size:10px;line-height:1.35}
+
+      .floating-chat{right:12px;bottom:12px}
+      .launcher{width:48px;height:48px;border-radius:15px;font-size:20px;box-shadow:0 10px 26px rgba(91,92,240,.28)}
+      .chatbox{bottom:58px}
+    }
+
+</style>
 </head>
 <body>
 <div class="overlay" id="overlay" onclick="toggleSidebar(false)"></div>
