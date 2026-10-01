@@ -1439,8 +1439,64 @@ async function createPixPayload360(userId,body){
   return {payload,amount,key,name,city,manualConfirmation:true};
 }
 
-function teamPublic(x){return {id:x.id,name:x.name,role:x.role,phone:x.phone||'',email:x.email||'',active:x.active!==false,createdAt:x.created_at||x.createdAt||new Date().toISOString()}}
-async function listTeam360(userId){if(pool){const r=await pool.query('SELECT * FROM team_members WHERE user_id=$1 ORDER BY active DESC,name',[userId]);return r.rows.map(teamPublic)}return mem.team.get(userId)||[]}
+const ROLE_PERMISSIONS={
+  manager:['central','customers','leads','orders','appointments','finance','inventory','team','growth'],
+  attendant:['central','customers','leads','orders','appointments'],
+  professional:['central','customers','appointments'],
+  finance:['central','customers','finance'],
+  stock:['central','inventory','orders']
+};
+function sanitizePermissions(list,role){
+  const allowed=['central','customers','leads','orders','appointments','finance','inventory','team','growth','chatbot','settings'];
+  const src=Array.isArray(list)&&list.length?list:(ROLE_PERMISSIONS[role]||ROLE_PERMISSIONS.attendant);
+  return [...new Set(src.filter(x=>allowed.includes(x)))];
+}
+function staffPublic(x){return {id:x.id,email:x.email,role:x.role||'attendant',permissions:Array.isArray(x.permissions)?x.permissions:[],active:x.active!==false,teamMemberId:x.team_member_id||x.teamMemberId||null,lastLoginAt:x.last_login_at||x.lastLoginAt||null}}
+async function createStaffAccess360(userId,teamMemberId,body){
+  const email=String(body.email||'').trim().toLowerCase(),password=String(body.password||''),role=String(body.role||'attendant');
+  if(!validEmail(email))throw new Error('Informe um e-mail válido para o acesso.');
+  if(password.length<6)throw new Error('A senha inicial precisa ter pelo menos 6 caracteres.');
+  if(await findUserByEmail(email))throw new Error('Este e-mail já pertence a uma conta principal.');
+  const existing=await findStaffByEmail(email);if(existing&&existing.user_id!==userId)throw new Error('Este e-mail já está em uso.');
+  const permissions=sanitizePermissions(body.permissions,role),salt=crypto.randomBytes(16).toString('hex'),passwordHash=hashPassword(password,salt);
+  if(pool){
+    const member=await pool.query('SELECT id FROM team_members WHERE id=$1 AND user_id=$2',[teamMemberId,userId]);if(!member.rowCount)throw new Error('Membro da equipe não encontrado.');
+    const current=await pool.query('SELECT id FROM staff_accounts WHERE user_id=$1 AND team_member_id=$2',[userId,teamMemberId]);
+    if(current.rowCount){
+      const r=await pool.query('UPDATE staff_accounts SET email=$1,password_hash=$2,password_salt=$3,role=$4,permissions=$5,active=TRUE,updated_at=NOW() WHERE id=$6 RETURNING *',[email,passwordHash,salt,role,JSON.stringify(permissions),current.rows[0].id]);
+      return staffPublic(r.rows[0]);
+    }
+    const r=await pool.query('INSERT INTO staff_accounts(id,user_id,team_member_id,email,password_hash,password_salt,role,permissions,active) VALUES($1,$2,$3,$4,$5,$6,$7,$8,TRUE) RETURNING *',[safeId(),userId,teamMemberId,email,passwordHash,salt,role,JSON.stringify(permissions)]);
+    return staffPublic(r.rows[0]);
+  }
+  const arr=mem.staffAccounts.get(userId)||[],idx=arr.findIndex(x=>x.teamMemberId===teamMemberId);
+  const row={id:idx>=0?arr[idx].id:safeId(),userId,teamMemberId,email,passwordHash,salt,role,permissions,active:true};
+  if(idx>=0)arr[idx]=row;else arr.push(row);mem.staffAccounts.set(userId,arr);return staffPublic(row);
+}
+async function updateStaffAccess360(userId,staffId,body){
+  const role=String(body.role||'attendant'),permissions=sanitizePermissions(body.permissions,role);
+  if(pool){
+    const r=await pool.query('SELECT * FROM staff_accounts WHERE id=$1 AND user_id=$2',[staffId,userId]);if(!r.rowCount)return null;
+    const active=typeof body.active==='boolean'?body.active:r.rows[0].active;
+    if(body.password!=null&&String(body.password).length){
+      if(String(body.password).length<6)throw new Error('A nova senha precisa ter pelo menos 6 caracteres.');
+      const salt=crypto.randomBytes(16).toString('hex'),hash=hashPassword(String(body.password),salt);
+      const u=await pool.query('UPDATE staff_accounts SET role=$1,permissions=$2,active=$3,password_hash=$4,password_salt=$5,updated_at=NOW() WHERE id=$6 RETURNING *',[role,JSON.stringify(permissions),active,hash,salt,staffId]);return staffPublic(u.rows[0]);
+    }
+    const u=await pool.query('UPDATE staff_accounts SET role=$1,permissions=$2,active=$3,updated_at=NOW() WHERE id=$4 RETURNING *',[role,JSON.stringify(permissions),active,staffId]);return staffPublic(u.rows[0]);
+  }
+  const arr=mem.staffAccounts.get(userId)||[],x=arr.find(y=>y.id===staffId);if(!x)return null;x.role=role;x.permissions=permissions;if(typeof body.active==='boolean')x.active=body.active;if(body.password){x.salt=crypto.randomBytes(16).toString('hex');x.passwordHash=hashPassword(String(body.password),x.salt)}return staffPublic(x);
+}
+function teamPublic(x){return {id:x.id,name:x.name,role:x.role,phone:x.phone||'',email:x.email||'',active:x.active!==false,createdAt:x.created_at||x.createdAt||new Date().toISOString(),access:x.access||null}}
+async function listTeam360(userId){
+  if(pool){
+    const r=await pool.query(`SELECT t.*,CASE WHEN s.id IS NULL THEN NULL ELSE jsonb_build_object('id',s.id,'email',s.email,'role',s.role,'permissions',s.permissions,'active',s.active,'lastLoginAt',s.last_login_at) END access
+      FROM team_members t LEFT JOIN staff_accounts s ON s.team_member_id=t.id AND s.user_id=t.user_id WHERE t.user_id=$1 ORDER BY t.active DESC,t.name`,[userId]);
+    return r.rows.map(teamPublic);
+  }
+  const accounts=mem.staffAccounts.get(userId)||[];
+  return (mem.team.get(userId)||[]).map(t=>({...teamPublic(t),access:staffPublic(accounts.find(s=>s.teamMemberId===t.id)||{})}));
+}
 async function createTeam360(userId,body){const row={id:safeId(),name:String(body.name||'').trim().slice(0,120),role:String(body.role||'Atendimento').slice(0,100),phone:cleanPhone(body.phone),email:String(body.email||'').trim().slice(0,180),active:body.active!==false,createdAt:new Date().toISOString()};if(!row.name)throw new Error('Informe o nome.');if(pool)await pool.query('INSERT INTO team_members(id,user_id,name,role,phone,email,active) VALUES($1,$2,$3,$4,$5,$6,$7)',[row.id,userId,row.name,row.role,row.phone,row.email,row.active]);else{const a=mem.team.get(userId)||[];a.push(row);mem.team.set(userId,a)}return row}
 async function updateTeam360(userId,id,body){if(pool){const r=await pool.query('SELECT * FROM team_members WHERE id=$1 AND user_id=$2',[id,userId]);if(!r.rowCount)return null;const c=r.rows[0],active=typeof body.active==='boolean'?body.active:c.active,role=body.role!=null?String(body.role).slice(0,100):c.role;await pool.query('UPDATE team_members SET role=$1,active=$2,updated_at=NOW() WHERE id=$3 AND user_id=$4',[role,active,id,userId]);return teamPublic({...c,role,active})}const x=(mem.team.get(userId)||[]).find(y=>y.id===id);if(!x)return null;if(typeof body.active==='boolean')x.active=body.active;if(body.role!=null)x.role=String(body.role);return x}
 
@@ -1596,15 +1652,23 @@ async function handleApi(req, res, urlPath) {
   }
   if (req.method === 'POST' && urlPath === '/api/auth/login') {
     try {
-      const body = await parseBody(req);
-      const user = await findUserByEmail(String(body.email || '').trim().toLowerCase());
-      if (!user) return json(res, 401, { error: 'E-mail ou senha inválidos.' });
-      const salt = user.password_salt || user.salt;
-      const expected = user.password_hash || user.passwordHash;
-      const actual = hashPassword(String(body.password || ''), salt);
-      if (actual !== expected) return json(res, 401, { error: 'E-mail ou senha inválidos.' });
-      const clean = normalizeUser(user);
-      return json(res, 200, { token: signToken(clean), user: clean, persistence: pool ? 'postgres' : 'memory' });
+      const body = await parseBody(req),email=String(body.email || '').trim().toLowerCase(),password=String(body.password||'');
+      const user = await findUserByEmail(email);
+      if(user){
+        const salt=user.password_salt||user.salt,expected=user.password_hash||user.passwordHash,actual=hashPassword(password,salt);
+        if(actual===expected){
+          const clean=normalizeUser(user);
+          return json(res,200,{token:signToken(clean),user:clean,persistence:pool?'postgres':'memory'});
+        }
+      }
+      const staff=await findStaffByEmail(email);
+      if(!staff||staff.active===false)return json(res,401,{error:'E-mail ou senha inválidos.'});
+      const salt=staff.password_salt||staff.salt,expected=staff.password_hash||staff.passwordHash,actual=hashPassword(password,salt);
+      if(actual!==expected)return json(res,401,{error:'E-mail ou senha inválidos.'});
+      const owner=await findUserById(staff.user_id||staff.userId);if(!owner)return json(res,401,{error:'Conta principal não encontrada.'});
+      if(pool)await pool.query('UPDATE staff_accounts SET last_login_at=NOW() WHERE id=$1',[staff.id]).catch(()=>{});
+      const clean=normalizeStaff(staff,owner);
+      return json(res,200,{token:signToken(clean),user:clean,persistence:pool?'postgres':'memory'});
     } catch (e) {
       console.error(e);
       return json(res, 500, { error: 'Não foi possível entrar.' });
@@ -1699,7 +1763,8 @@ async function handleApi(req, res, urlPath) {
   if(inventoryMatch&&req.method==='PATCH'){const body=await parseBody(req),item=await updateInventory360(auth.sub,inventoryMatch[1],body);return item?json(res,200,{item}):json(res,404,{error:'Item não encontrado.'});}
 
   if (req.method === 'GET' && urlPath === '/api/me') {
-    return json(res, 200, { user: normalizeUser(user), persistence: pool ? 'postgres' : 'memory' });
+    const me=(auth.accountType||'owner')==='staff'?normalizeStaff({...auth,id:auth.staffId,team_member_id:auth.teamMemberId,member_name:auth.name},user):normalizeUser(user);
+    return json(res, 200, { user: me, persistence: pool ? 'postgres' : 'memory' });
   }
   if (req.method === 'GET' && urlPath === '/api/insights') {
     return json(res, 200, await getInsights(auth.sub));
