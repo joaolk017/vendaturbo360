@@ -155,6 +155,7 @@ async function initDb() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_orders_user_created ON orders(user_id, created_at DESC);
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS age_confirmed BOOLEAN NOT NULL DEFAULT FALSE;
     CREATE TABLE IF NOT EXISTS appointments (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -772,6 +773,10 @@ function publicConfig(user, config) {
     botId: user.id,
     businessName: config.businessName || user.business_name || user.businessName || 'Atendimento',
     template: config.template || 'custom',
+    ageRestricted: !!config.ageRestricted,
+    regulatedCategory: String(config.regulatedCategory || ''),
+    publicCatalogAllowed: config.publicCatalogAllowed !== false,
+    ageNotice: String(config.ageNotice || ''),
     delivery: config.delivery && typeof config.delivery === 'object' ? {
       enabled: !!config.delivery.enabled,
       open: String(config.delivery.open || '11:00').slice(0,5),
@@ -943,7 +948,8 @@ function publicOrder(row) {
     items: row.items || [], subtotal: Number(row.subtotal || 0),
     deliveryFee: Number(row.delivery_fee ?? row.deliveryFee ?? 0), total: Number(row.total || 0),
     status: row.status || 'new', paymentStatus: row.payment_status || row.paymentStatus || 'pending',
-    notes: row.notes || '', date: row.created_at ? new Date(row.created_at).toLocaleString('pt-BR') : (row.date || new Date().toLocaleString('pt-BR'))
+    notes: row.notes || '', ageConfirmed: !!(row.age_confirmed ?? row.ageConfirmed),
+    date: row.created_at ? new Date(row.created_at).toLocaleString('pt-BR') : (row.date || new Date().toLocaleString('pt-BR'))
   };
 }
 function orderCode() {
@@ -997,7 +1003,9 @@ async function syncOrderInventory360(userId,order,mode='apply'){
 
 async function createPublicOrder(userId, cfg, body) {
   const delivery = cfg.delivery || {};
+  if (cfg.publicCatalogAllowed === false) throw new Error('Pedidos online não estão disponíveis para este segmento.');
   if (!delivery.enabled) throw new Error('Pedidos online não estão habilitados para este negócio.');
+  if (cfg.ageRestricted && body.ageConfirmed !== true) throw new Error('Confirme que você tem 18 anos ou mais para continuar.');
   const catalog = Array.isArray(delivery.catalog) ? delivery.catalog.filter(x => x.available !== false) : [];
   const byId = new Map(catalog.map(x => [String(x.id), x]));
   const requested = Array.isArray(body.items) ? body.items.slice(0,20) : [];
@@ -1040,12 +1048,13 @@ async function createPublicOrder(userId, cfg, body) {
   const row = {
     id:safeId(), code:orderCode(), customer_name:customerName, phone, fulfillment, address, items,
     subtotal, delivery_fee:deliveryFee, total, status:'new', payment_status:'pending',
+    age_confirmed: cfg.ageRestricted ? true : false,
     notes:String(body.notes||'').slice(0,500), created_at:new Date()
   };
   if (pool) {
     await pool.query(
-      'INSERT INTO orders(id,user_id,code,customer_name,phone,fulfillment,address,items,subtotal,delivery_fee,total,status,payment_status,notes) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)',
-      [row.id,userId,row.code,row.customer_name,row.phone,row.fulfillment,JSON.stringify(row.address),JSON.stringify(row.items),row.subtotal,row.delivery_fee,row.total,row.status,row.payment_status,row.notes]
+      'INSERT INTO orders(id,user_id,code,customer_name,phone,fulfillment,address,items,subtotal,delivery_fee,total,status,payment_status,age_confirmed,notes) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)',
+      [row.id,userId,row.code,row.customer_name,row.phone,row.fulfillment,JSON.stringify(row.address),JSON.stringify(row.items),row.subtotal,row.delivery_fee,row.total,row.status,row.payment_status,row.age_confirmed,row.notes]
     );
     if(row.total>0){
       await pool.query(`INSERT INTO financial_entries(id,user_id,type,category,description,amount,status,method,source_type,source_id,created_at)
