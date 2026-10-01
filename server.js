@@ -4,6 +4,8 @@ const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 const QRCode = require('qrcode');
+let webpush = null;
+try { webpush = require('web-push'); } catch (e) { console.warn('web-push não instalado:', e.message); }
 
 const PORT = process.env.PORT || 3000;
 const publicDir = __dirname;
@@ -14,6 +16,13 @@ const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.6-luna';
 const AI_DAILY_REQUEST_LIMIT = Math.max(20, Number(process.env.AI_DAILY_REQUEST_LIMIT || 250));
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || '';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@atendebot360.app';
+if (webpush && VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+  try { webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY); }
+  catch (e) { console.error('Falha ao configurar Web Push:', e.message); }
+}
 const pool = DATABASE_URL ? new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } }) : null;
 
 const mimeTypes = {
@@ -32,7 +41,9 @@ const mem = {
   users: new Map(),
   state: new Map(),
   leads: new Map(),
-  orders: new Map()
+  orders: new Map(),
+  appointments: new Map(),
+  pushSubs: new Map()
 };
 const publicRate = new Map();
 
@@ -55,6 +66,8 @@ function seedDemo() {
   });
   mem.leads.set(id, []);
   mem.orders.set(id, []);
+  mem.appointments.set(id, []);
+  mem.pushSubs.set(id, []);
 }
 seedDemo();
 
@@ -130,6 +143,40 @@ async function initDb() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_orders_user_created ON orders(user_id, created_at DESC);
+    CREATE TABLE IF NOT EXISTS appointments (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      code TEXT NOT NULL,
+      customer_name TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      professional_id TEXT NOT NULL,
+      professional_name TEXT NOT NULL,
+      service_id TEXT NOT NULL,
+      service_name TEXT NOT NULL,
+      service_price NUMERIC(12,2) NOT NULL DEFAULT 0,
+      appointment_date DATE NOT NULL,
+      start_time TIME NOT NULL,
+      duration_minutes INTEGER NOT NULL DEFAULT 30,
+      status TEXT NOT NULL DEFAULT 'confirmed',
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_appointments_user_date ON appointments(user_id, appointment_date, start_time);
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_appointments_slot_active
+      ON appointments(user_id, professional_id, appointment_date, start_time)
+      WHERE status <> 'cancelled';
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      endpoint TEXT NOT NULL,
+      subscription JSONB NOT NULL,
+      user_agent TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(user_id, endpoint)
+    );
+    CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id);
   `);
   const demo = await pool.query('SELECT id FROM users WHERE email=$1', ['cliente@demo.com']);
   if (!demo.rowCount) {
@@ -227,6 +274,8 @@ async function createUser({ email, password, businessName }) {
   mem.state.set(id, { config: null, metrics: { chats: 0, whatsapp: 0 }, updatedAt: new Date().toISOString() });
   mem.leads.set(id, []);
   mem.orders.set(id, []);
+  mem.appointments.set(id, []);
+  mem.pushSubs.set(id, []);
   return user;
 }
 function normalizeUser(user) {
@@ -498,6 +547,24 @@ function publicConfig(user, config) {
         available: p.available !== false
       })) : []
     } : { enabled:false, open:'11:00', close:'14:00', deliveryFee:0, minimumOrder:0, catalog:[] },
+    appointments: config.appointments && typeof config.appointments === 'object' ? {
+      enabled: !!config.appointments.enabled,
+      slotMinutes: Math.max(10, Math.min(240, Number(config.appointments.slotMinutes || 30))),
+      advanceDays: Math.max(1, Math.min(120, Number(config.appointments.advanceDays || 30))),
+      professionals: Array.isArray(config.appointments.professionals) ? config.appointments.professionals.slice(0,30).map((p,i)=>({
+        id:String(p.id || ('pro-'+i)).slice(0,80),
+        name:String(p.name || 'Profissional').slice(0,120),
+        active:p.active !== false
+      })) : [],
+      services: Array.isArray(config.appointments.services) ? config.appointments.services.slice(0,50).map((s,i)=>({
+        id:String(s.id || ('service-'+i)).slice(0,80),
+        name:String(s.name || 'Serviço').slice(0,120),
+        duration:Math.max(10,Math.min(480,Number(s.duration || config.appointments.slotMinutes || 30))),
+        price:Math.max(0,Number(s.price || 0)),
+        active:s.active !== false
+      })) : [],
+      weeklyHours: config.appointments.weeklyHours && typeof config.appointments.weeklyHours === 'object' ? config.appointments.weeklyHours : {}
+    } : { enabled:false, slotMinutes:30, advanceDays:30, professionals:[], services:[], weeklyHours:{} },
     greeting: config.greeting || 'Olá! Como posso ajudar você hoje?',
     fallback: config.fallback || 'Posso ajudar com informações, valores, horários, orçamento ou atendimento humano.',
     mainService: config.mainService || 'Atendimento',
@@ -717,6 +784,195 @@ async function updateOrder(userId, id, patch) {
   return o;
 }
 
+
+function appointmentCode() {
+  return 'A' + Date.now().toString().slice(-6) + crypto.randomBytes(1).toString('hex').toUpperCase();
+}
+function appointmentPublic(row) {
+  return {
+    id: row.id,
+    code: row.code,
+    customerName: row.customer_name || row.customerName,
+    phone: row.phone,
+    professionalId: row.professional_id || row.professionalId,
+    professionalName: row.professional_name || row.professionalName,
+    serviceId: row.service_id || row.serviceId,
+    serviceName: row.service_name || row.serviceName,
+    servicePrice: Number(row.service_price ?? row.servicePrice ?? 0),
+    date: String(row.appointment_date || row.date || '').slice(0,10),
+    time: String(row.start_time || row.time || '').slice(0,5),
+    duration: Number(row.duration_minutes ?? row.duration ?? 30),
+    status: row.status || 'confirmed',
+    notes: row.notes || '',
+    createdAt: row.created_at || row.createdAt || new Date().toISOString()
+  };
+}
+function dayKeyFromDate(dateStr) {
+  const parts=String(dateStr||'').split('-').map(Number);
+  if(parts.length!==3||parts.some(x=>!Number.isInteger(x)))return null;
+  const dt=new Date(Date.UTC(parts[0],parts[1]-1,parts[2]));
+  if(Number.isNaN(dt.getTime()))return null;
+  return String(dt.getUTCDay());
+}
+function minutesOf(time) {
+  const m=/^(\d{2}):(\d{2})$/.exec(String(time||''));
+  if(!m)return null;
+  const h=Number(m[1]),mi=Number(m[2]);
+  if(h>23||mi>59)return null;
+  return h*60+mi;
+}
+function hhmm(total) {
+  const h=Math.floor(total/60),m=total%60;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+function normalizeAppointmentConfig(cfg) {
+  const a=cfg.appointments||{};
+  const professionals=(a.professionals||[]).filter(x=>x&&x.active!==false).map(x=>({id:String(x.id),name:String(x.name||'Profissional')}));
+  const services=(a.services||[]).filter(x=>x&&x.active!==false).map(x=>({id:String(x.id),name:String(x.name||'Serviço'),duration:Math.max(10,Math.min(480,Number(x.duration||a.slotMinutes||30))),price:Math.max(0,Number(x.price||0))}));
+  return { enabled:!!a.enabled, slotMinutes:Math.max(10,Math.min(240,Number(a.slotMinutes||30))), advanceDays:Math.max(1,Math.min(120,Number(a.advanceDays||30))), weeklyHours:a.weeklyHours||{}, professionals, services };
+}
+async function bookedSlots(userId,date,professionalId) {
+  if(pool){
+    const r=await pool.query("SELECT start_time FROM appointments WHERE user_id=$1 AND appointment_date=$2 AND professional_id=$3 AND status<>'cancelled'",[userId,date,professionalId]);
+    return new Set(r.rows.map(x=>String(x.start_time).slice(0,5)));
+  }
+  return new Set((mem.appointments.get(userId)||[]).filter(x=>x.date===date&&x.professionalId===professionalId&&x.status!=='cancelled').map(x=>x.time));
+}
+async function listAvailability(userId,cfg,date,professionalId,serviceId) {
+  const a=normalizeAppointmentConfig(cfg);
+  if(!a.enabled)throw new Error('Agendamentos online não estão habilitados.');
+  const pro=a.professionals.find(x=>x.id===String(professionalId||''))||a.professionals[0];
+  const service=a.services.find(x=>x.id===String(serviceId||''))||a.services[0];
+  if(!pro)throw new Error('Nenhum profissional disponível.');
+  if(!service)throw new Error('Nenhum serviço disponível.');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(date||'')))throw new Error('Data inválida.');
+  const now=new Date();
+  const today=now.toISOString().slice(0,10);
+  const max=new Date(now.getTime()+a.advanceDays*86400000).toISOString().slice(0,10);
+  if(date<today||date>max)throw new Error('Data fora da janela de agendamento.');
+  const dayKey=dayKeyFromDate(date);
+  const day=a.weeklyHours?.[dayKey]||{};
+  if(day.enabled===false||!day.start||!day.end)return {professional:pro,service,date,slots:[]};
+  const start=minutesOf(day.start),end=minutesOf(day.end);
+  if(start==null||end==null||end<=start)return {professional:pro,service,date,slots:[]};
+  const step=Math.max(a.slotMinutes,10);
+  const duration=Math.max(service.duration,step);
+  const booked=await bookedSlots(userId,date,pro.id);
+  const slots=[];
+  for(let t=start;t+duration<=end;t+=step){
+    const time=hhmm(t);
+    if(booked.has(time))continue;
+    if(date===today){
+      const current=now.getHours()*60+now.getMinutes()+15;
+      if(t<=current)continue;
+    }
+    slots.push(time);
+  }
+  return {professional:pro,service,date,slots};
+}
+async function createAppointment(userId,cfg,body) {
+  const a=normalizeAppointmentConfig(cfg);
+  const professional=a.professionals.find(x=>x.id===String(body.professionalId||''));
+  const service=a.services.find(x=>x.id===String(body.serviceId||''));
+  if(!professional||!service)throw new Error('Selecione um profissional e um serviço válidos.');
+  const date=String(body.date||'').slice(0,10);
+  const time=String(body.time||'').slice(0,5);
+  const availability=await listAvailability(userId,cfg,date,professional.id,service.id);
+  if(!availability.slots.includes(time))throw new Error('Este horário não está mais disponível.');
+  const customerName=String(body.customerName||'').trim().slice(0,120);
+  const phone=String(body.phone||'').replace(/\D/g,'').slice(0,15);
+  if(!customerName)throw new Error('Informe seu nome.');
+  if(phone.length<10)throw new Error('Informe um WhatsApp válido com DDD.');
+  const row={
+    id:safeId(),code:appointmentCode(),customer_name:customerName,phone,
+    professional_id:professional.id,professional_name:professional.name,
+    service_id:service.id,service_name:service.name,service_price:service.price,
+    appointment_date:date,start_time:time,duration_minutes:service.duration,
+    status:'confirmed',notes:String(body.notes||'').slice(0,500),created_at:new Date().toISOString()
+  };
+  if(pool){
+    try{
+      await pool.query(`INSERT INTO appointments(id,user_id,code,customer_name,phone,professional_id,professional_name,service_id,service_name,service_price,appointment_date,start_time,duration_minutes,status,notes)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        [row.id,userId,row.code,row.customer_name,row.phone,row.professional_id,row.professional_name,row.service_id,row.service_name,row.service_price,row.appointment_date,row.start_time,row.duration_minutes,row.status,row.notes]);
+    }catch(e){
+      if(e.code==='23505')throw new Error('Este horário acabou de ser reservado. Escolha outro.');
+      throw e;
+    }
+  }else{
+    const arr=mem.appointments.get(userId)||[];
+    if(arr.some(x=>x.professionalId===professional.id&&x.date===date&&x.time===time&&x.status!=='cancelled'))throw new Error('Este horário acabou de ser reservado. Escolha outro.');
+    arr.unshift(appointmentPublic(row));mem.appointments.set(userId,arr);
+  }
+  const appt=appointmentPublic(row);
+  notifyUser(userId,{
+    title:'✂️ Novo agendamento',
+    body:appt.customerName+' • '+appt.serviceName+' • '+appt.date.split('-').reverse().join('/')+' às '+appt.time+' • '+appt.professionalName,
+    url:'/?view=appointments',
+    tag:'appointment-'+appt.id
+  }).catch(()=>{});
+  return appt;
+}
+async function listAppointments(userId) {
+  if(pool){
+    const r=await pool.query("SELECT * FROM appointments WHERE user_id=$1 ORDER BY appointment_date ASC,start_time ASC,created_at DESC LIMIT 300",[userId]);
+    return r.rows.map(appointmentPublic);
+  }
+  return mem.appointments.get(userId)||[];
+}
+async function updateAppointment(userId,id,patch) {
+  const allowed=['confirmed','completed','cancelled','no_show'];
+  if(pool){
+    const r=await pool.query('SELECT * FROM appointments WHERE id=$1 AND user_id=$2',[id,userId]);
+    if(!r.rowCount)return null;
+    const cur=r.rows[0];
+    const status=allowed.includes(patch.status)?patch.status:cur.status;
+    await pool.query('UPDATE appointments SET status=$1,updated_at=NOW() WHERE id=$2 AND user_id=$3',[status,id,userId]);
+    return appointmentPublic({...cur,status});
+  }
+  const a=(mem.appointments.get(userId)||[]).find(x=>x.id===id);
+  if(!a)return null;
+  if(allowed.includes(patch.status))a.status=patch.status;
+  return a;
+}
+function pushReady(){
+  return !!(webpush&&VAPID_PUBLIC_KEY&&VAPID_PRIVATE_KEY);
+}
+async function savePushSubscription(userId,subscription,userAgent='') {
+  if(!subscription||!subscription.endpoint)throw new Error('Assinatura de notificação inválida.');
+  const endpoint=String(subscription.endpoint).slice(0,2000);
+  if(pool){
+    await pool.query(`INSERT INTO push_subscriptions(id,user_id,endpoint,subscription,user_agent,updated_at)
+      VALUES($1,$2,$3,$4,$5,NOW())
+      ON CONFLICT(user_id,endpoint) DO UPDATE SET subscription=EXCLUDED.subscription,user_agent=EXCLUDED.user_agent,updated_at=NOW()`,
+      [safeId(),userId,endpoint,JSON.stringify(subscription),String(userAgent||'').slice(0,300)]);
+  }else{
+    const arr=mem.pushSubs.get(userId)||[];
+    const idx=arr.findIndex(x=>x.endpoint===endpoint);
+    const item={endpoint,subscription,userAgent};
+    if(idx>=0)arr[idx]=item;else arr.push(item);
+    mem.pushSubs.set(userId,arr);
+  }
+}
+async function notifyUser(userId,payload) {
+  if(!pushReady())return {sent:0,configured:false};
+  let subs=[];
+  if(pool){
+    const r=await pool.query('SELECT id,endpoint,subscription FROM push_subscriptions WHERE user_id=$1',[userId]);
+    subs=r.rows;
+  }else subs=(mem.pushSubs.get(userId)||[]).map((x,i)=>({id:String(i),endpoint:x.endpoint,subscription:x.subscription}));
+  let sent=0;
+  for(const s of subs){
+    try{
+      await webpush.sendNotification(s.subscription,JSON.stringify(payload),{TTL:120});
+      sent++;
+    }catch(e){
+      if(pool&&(e.statusCode===404||e.statusCode===410))await pool.query('DELETE FROM push_subscriptions WHERE id=$1',[s.id]).catch(()=>{});
+    }
+  }
+  return {sent,configured:true};
+}
+
 async function getInsights(userId) {
   if (!pool) return { conversations:0, messages:0, hot:0, intents:[], gaps:[] };
   const [summary, intents, gaps] = await Promise.all([
@@ -777,6 +1033,31 @@ async function handleApi(req, res, urlPath) {
     } catch (e) {
       return json(res, 400, { error: e.message || 'Não foi possível criar o pedido.' });
     }
+  }
+
+  const availabilityMatch = urlPath.match(/^\/api\/public\/bot\/([^/]+)\/availability$/);
+  if (availabilityMatch && req.method === 'GET') {
+    const user = await findUserById(availabilityMatch[1]);
+    if (!user) return json(res, 404, { error:'Chatbot não encontrado.' });
+    try {
+      const reqUrl=new URL(req.url,'http://localhost');
+      const cfg=publicConfig(user,await getBotConfig(user.id));
+      const result=await listAvailability(user.id,cfg,String(reqUrl.searchParams.get('date')||''),String(reqUrl.searchParams.get('professional')||''),String(reqUrl.searchParams.get('service')||''));
+      return json(res,200,result);
+    } catch(e) { return json(res,400,{error:e.message||'Não foi possível consultar horários.'}); }
+  }
+
+  const publicAppointmentMatch = urlPath.match(/^\/api\/public\/bot\/([^/]+)\/appointments$/);
+  if (publicAppointmentMatch && req.method === 'POST') {
+    const user = await findUserById(publicAppointmentMatch[1]);
+    if (!user) return json(res, 404, { error:'Chatbot não encontrado.' });
+    if (!allowPublicMessage(req,user.id)) return json(res,429,{error:'Muitas solicitações em pouco tempo. Tente novamente em instantes.'});
+    try {
+      const body=await parseBody(req);
+      const cfg=publicConfig(user,await getBotConfig(user.id));
+      const appointment=await createAppointment(user.id,cfg,body);
+      return json(res,201,{appointment});
+    } catch(e) { return json(res,400,{error:e.message||'Não foi possível criar o agendamento.'}); }
   }
 
   const publicMessageMatch = urlPath.match(/^\/api\/public\/bot\/([^/]+)\/message$/);
@@ -857,6 +1138,30 @@ async function handleApi(req, res, urlPath) {
   if (!auth) return json(res, 401, { error: 'Sessão inválida ou expirada.' });
   const user = await findUserById(auth.sub);
   if (!user) return json(res, 401, { error: 'Usuário não encontrado.' });
+
+  if (req.method === 'GET' && urlPath === '/api/push/public-key') {
+    return json(res, 200, { configured: pushReady(), publicKey: VAPID_PUBLIC_KEY || '' });
+  }
+  if (req.method === 'POST' && urlPath === '/api/push/subscribe') {
+    const body=await parseBody(req);
+    try {
+      await savePushSubscription(auth.sub,body.subscription,req.headers['user-agent']||'');
+      return json(res,200,{ok:true,configured:pushReady()});
+    } catch(e) { return json(res,400,{error:e.message||'Não foi possível ativar notificações.'}); }
+  }
+  if (req.method === 'POST' && urlPath === '/api/push/test') {
+    const result=await notifyUser(auth.sub,{title:'🔔 AtendeBot 360',body:'Notificações ativadas com sucesso no seu celular.',url:'/',tag:'at360-test'});
+    return json(res,200,result);
+  }
+  if (req.method === 'GET' && urlPath === '/api/appointments') {
+    return json(res,200,{appointments:await listAppointments(auth.sub)});
+  }
+  const appointmentMatch=urlPath.match(/^\/api\/appointments\/([^/]+)$/);
+  if (appointmentMatch && req.method === 'PATCH') {
+    const body=await parseBody(req);
+    const appointment=await updateAppointment(auth.sub,appointmentMatch[1],body);
+    return appointment?json(res,200,{appointment}):json(res,404,{error:'Agendamento não encontrado.'});
+  }
 
   if (req.method === 'GET' && urlPath === '/api/me') {
     return json(res, 200, { user: normalizeUser(user), persistence: pool ? 'postgres' : 'memory' });
