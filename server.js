@@ -783,16 +783,39 @@ function publicConfig(user, config) {
       close: String(config.delivery.close || '14:00').slice(0,5),
       deliveryFee: Math.max(0, Number(config.delivery.deliveryFee || 0)),
       minimumOrder: Math.max(0, Number(config.delivery.minimumOrder || 0)),
-      catalog: Array.isArray(config.delivery.catalog) ? config.delivery.catalog.slice(0,40).map((p,i)=>({
+      categories: Array.isArray(config.delivery.categories) ? config.delivery.categories.slice(0,30).map(x=>String(x).slice(0,60)) : [],
+      zones: config.delivery.zones && typeof config.delivery.zones === 'object' ? {
+        mode: ['flat','neighborhood','radius'].includes(config.delivery.zones.mode) ? config.delivery.zones.mode : 'flat',
+        neighborhoods: Array.isArray(config.delivery.zones.neighborhoods) ? config.delivery.zones.neighborhoods.slice(0,60).map(z=>({
+          name:String(z.name||'').slice(0,100),
+          fee:Math.max(0,Number(z.fee||0)),
+          minOrder:Math.max(0,Number(z.minOrder||0)),
+          active:z.active!==false
+        })) : [],
+        origin: {
+          lat:Number(config.delivery.zones.origin?.lat||0),
+          lng:Number(config.delivery.zones.origin?.lng||0)
+        },
+        radiusBands: Array.isArray(config.delivery.zones.radiusBands) ? config.delivery.zones.radiusBands.slice(0,20).map(z=>({
+          maxKm:Math.max(0,Number(z.maxKm||0)),
+          fee:Math.max(0,Number(z.fee||0)),
+          minOrder:Math.max(0,Number(z.minOrder||0))
+        })).sort((a,b)=>a.maxKm-b.maxKm) : []
+      } : {mode:'flat',neighborhoods:[],origin:{lat:0,lng:0},radiusBands:[]},
+      catalog: Array.isArray(config.delivery.catalog) ? config.delivery.catalog.slice(0,80).map((p,i)=>({
         id: String(p.id || ('item-'+i)).slice(0,80),
         name: String(p.name || 'Item').slice(0,120),
         description: String(p.description || '').slice(0,240),
         price: Math.max(0, Number(p.price || 0)),
         image: String(p.image || '').slice(0,700),
-        kind: p.kind === 'addon' ? 'addon' : 'product',
+        kind: p.kind === 'addon' ? 'addon' : (p.kind === 'combo' ? 'combo' : 'product'),
+        category: String(p.category || '').slice(0,60),
+        unit: ['un','pack','fardo','caixa','kit'].includes(p.unit) ? p.unit : 'un',
+        packQty: Math.max(1,Math.min(999,Number(p.packQty||1))),
+        comboItems: Array.isArray(p.comboItems) ? p.comboItems.slice(0,20).map(x=>({id:String(x.id||'').slice(0,80),qty:Math.max(1,Math.min(99,Number(x.qty||1))) })) : [],
         available: p.available !== false
       })) : []
-    } : { enabled:false, open:'11:00', close:'14:00', deliveryFee:0, minimumOrder:0, catalog:[] },
+    } : { enabled:false, open:'11:00', close:'14:00', deliveryFee:0, minimumOrder:0, categories:[], zones:{mode:'flat',neighborhoods:[],origin:{lat:0,lng:0},radiusBands:[]}, catalog:[] },
     appointments: config.appointments && typeof config.appointments === 'object' ? {
       enabled: !!config.appointments.enabled,
       slotMinutes: Math.max(10, Math.min(240, Number(config.appointments.slotMinutes || 30))),
@@ -956,8 +979,58 @@ function orderCode() {
   return 'P' + Date.now().toString().slice(-6) + crypto.randomBytes(1).toString('hex').toUpperCase();
 }
 
+function normalizeText360(v){
+  return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/\s+/g,' ');
+}
+function haversineKm360(lat1,lng1,lat2,lng2){
+  const toRad=x=>x*Math.PI/180,R=6371;
+  const dLat=toRad(lat2-lat1),dLng=toRad(lng2-lng1);
+  const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function resolveDelivery360(delivery,address,subtotal){
+  const zones=delivery?.zones&&typeof delivery.zones==='object'?delivery.zones:{mode:'flat'};
+  const mode=['flat','neighborhood','radius'].includes(zones.mode)?zones.mode:'flat';
+  let fee=Math.max(0,Number(delivery.deliveryFee||0));
+  let minOrder=Math.max(0,Number(delivery.minimumOrder||0));
+  let label='Taxa padrão';
+  let distanceKm=null;
+  if(mode==='neighborhood'){
+    const target=normalizeText360(address?.neighborhood);
+    const z=(Array.isArray(zones.neighborhoods)?zones.neighborhoods:[]).find(x=>x.active!==false&&normalizeText360(x.name)===target);
+    if(!z)throw new Error('Este bairro ainda não está dentro da área de entrega.');
+    fee=Math.max(0,Number(z.fee||0));minOrder=Math.max(minOrder,Number(z.minOrder||0));label=String(z.name||address.neighborhood);
+  }else if(mode==='radius'){
+    const oLat=Number(zones.origin?.lat),oLng=Number(zones.origin?.lng),lat=Number(address?.lat),lng=Number(address?.lng);
+    if(!Number.isFinite(oLat)||!Number.isFinite(oLng)||!oLat||!oLng)throw new Error('A adega ainda não configurou o ponto de origem para entrega por raio.');
+    if(!Number.isFinite(lat)||!Number.isFinite(lng)||!lat||!lng)throw new Error('Use sua localização para calcular a entrega por raio.');
+    distanceKm=haversineKm360(oLat,oLng,lat,lng);
+    const bands=(Array.isArray(zones.radiusBands)?zones.radiusBands:[]).map(x=>({maxKm:Number(x.maxKm||0),fee:Number(x.fee||0),minOrder:Number(x.minOrder||0)})).filter(x=>x.maxKm>0).sort((a,b)=>a.maxKm-b.maxKm);
+    const z=bands.find(x=>distanceKm<=x.maxKm);
+    if(!z)throw new Error('Seu endereço está fora do raio de entrega.');
+    fee=Math.max(0,z.fee);minOrder=Math.max(minOrder,z.minOrder);label='Até '+z.maxKm+' km';
+  }
+  if(subtotal<minOrder)throw new Error('O pedido mínimo para esta entrega é '+minOrder.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})+'.');
+  return {fee:Number(fee.toFixed(2)),minOrder,label,distanceKm:distanceKm==null?null:Number(distanceKm.toFixed(2)),mode};
+}
+function stockParts360(items){
+  const parts=[];
+  for(const it of Array.isArray(items)?items:[]){
+    if(Array.isArray(it.components)&&it.components.length){
+      for(const p of it.components){
+        const id=String(p.id||'');const qty=Math.max(0,Number(p.qty||0))*Math.max(0,Number(it.qty||0));
+        if(id&&qty>0)parts.push({id,qty});
+      }
+    }else{
+      const id=String(it.id||''),qty=Math.max(0,Number(it.qty||0));if(id&&qty>0)parts.push({id,qty});
+    }
+  }
+  const map=new Map();
+  for(const p of parts)map.set(p.id,(map.get(p.id)||0)+p.qty);
+  return [...map.entries()].map(([id,qty])=>({id,qty}));
+}
 async function syncOrderInventory360(userId,order,mode='apply'){
-  const items=Array.isArray(order?.items)?order.items:[];if(!items.length)return {changed:0};
+  const items=stockParts360(order?.items);if(!items.length)return {changed:0};
   if(!pool){
     const stock=mem.inventory.get(userId)||[];let changed=0;
     for(const it of items){
@@ -1008,7 +1081,7 @@ async function createPublicOrder(userId, cfg, body) {
   if (cfg.ageRestricted && body.ageConfirmed !== true) throw new Error('Confirme que você tem 18 anos ou mais para continuar.');
   const catalog = Array.isArray(delivery.catalog) ? delivery.catalog.filter(x => x.available !== false) : [];
   const byId = new Map(catalog.map(x => [String(x.id), x]));
-  const requested = Array.isArray(body.items) ? body.items.slice(0,20) : [];
+  const requested = Array.isArray(body.items) ? body.items.slice(0,30) : [];
   const items = [];
   let subtotal = 0;
   let hasMainItem = false;
@@ -1017,15 +1090,20 @@ async function createPublicOrder(userId, cfg, body) {
     const qty = Math.max(1, Math.min(20, Math.floor(Number(it.qty || 1))));
     if (!product || !Number.isFinite(qty)) continue;
     const price = Math.max(0, Number(product.price || 0));
-    const kind = product.kind === 'addon' ? 'addon' : 'product';
+    const kind = product.kind === 'addon' ? 'addon' : (product.kind === 'combo' ? 'combo' : 'product');
     if (kind !== 'addon') hasMainItem = true;
-    items.push({ id:String(product.id), name:String(product.name), kind, qty, price, total:Number((price*qty).toFixed(2)) });
+    const components=kind==='combo'&&Array.isArray(product.comboItems)?product.comboItems.map(x=>{
+      const base=byId.get(String(x.id||''));return base&&base.kind!=='combo'?{id:String(base.id),name:String(base.name),qty:Math.max(1,Math.min(99,Number(x.qty||1)))}:null;
+    }).filter(Boolean):[];
+    items.push({
+      id:String(product.id),name:String(product.name),kind,category:String(product.category||''),
+      unit:String(product.unit||'un'),packQty:Math.max(1,Number(product.packQty||1)),components,qty,price,total:Number((price*qty).toFixed(2))
+    });
     subtotal += price * qty;
   }
   subtotal = Number(subtotal.toFixed(2));
   if (!items.length) throw new Error('Escolha pelo menos um item.');
-  if (!hasMainItem) throw new Error('Escolha pelo menos um prato ou produto principal.');
-  if (subtotal < Number(delivery.minimumOrder || 0)) throw new Error('O pedido mínimo ainda não foi atingido.');
+  if (!hasMainItem) throw new Error('Escolha pelo menos um produto principal.');
   const fulfillment = body.fulfillment === 'pickup' ? 'pickup' : 'delivery';
   const address = fulfillment === 'delivery' && body.address && typeof body.address === 'object' ? {
     cep:String(body.address.cep||'').slice(0,12),
@@ -1034,7 +1112,9 @@ async function createPublicOrder(userId, cfg, body) {
     neighborhood:String(body.address.neighborhood||'').slice(0,100),
     city:String(body.address.city||'').slice(0,100),
     complement:String(body.address.complement||'').slice(0,120),
-    reference:String(body.address.reference||'').slice(0,160)
+    reference:String(body.address.reference||'').slice(0,160),
+    lat:Number(body.address.lat||0),
+    lng:Number(body.address.lng||0)
   } : {};
   if (fulfillment === 'delivery' && (!address.street || !address.number || !address.neighborhood)) {
     throw new Error('Preencha rua, número e bairro para entrega.');
@@ -1043,7 +1123,12 @@ async function createPublicOrder(userId, cfg, body) {
   const phone = String(body.phone || '').replace(/\D/g,'').slice(0,15);
   if (!customerName) throw new Error('Informe seu nome.');
   if (phone.length < 10) throw new Error('Informe um WhatsApp válido com DDD.');
-  const deliveryFee = fulfillment === 'delivery' ? Math.max(0, Number(delivery.deliveryFee || 0)) : 0;
+  const zone=fulfillment==='delivery'?resolveDelivery360(delivery,address,subtotal):{fee:0,minOrder:Number(delivery.minimumOrder||0),label:'Retirada',distanceKm:null,mode:'pickup'};
+  if(fulfillment==='pickup'&&subtotal<Math.max(0,Number(delivery.minimumOrder||0)))throw new Error('O pedido mínimo ainda não foi atingido.');
+  if(fulfillment==='delivery'){
+    address.deliveryMode=zone.mode;address.deliveryZone=zone.label;if(zone.distanceKm!=null)address.distanceKm=zone.distanceKm;
+  }
+  const deliveryFee = zone.fee;
   const total = Number((subtotal + deliveryFee).toFixed(2));
   const row = {
     id:safeId(), code:orderCode(), customer_name:customerName, phone, fulfillment, address, items,
