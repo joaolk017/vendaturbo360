@@ -4,63 +4,76 @@ MVP comercial de chatbot white-label para vender para comércios locais.
 
 ## Versão atual
 
-A versão 3 inclui:
+A versão comercial inclui:
 
-- landing page comercial;
-- modelos prontos por nicho;
-- chat flutuante demonstrativo;
-- respostas automáticas;
-- captura de leads;
+- painel do cliente responsivo;
+- assistente "Criar meu atendente" em 3 etapas;
+- modelos prontos por segmento;
+- editor de nome, WhatsApp, horários, endereço, serviços, preços, mensagens e cores;
+- chat demonstrativo com respostas automáticas;
+- captação de leads;
+- funil Conversas → Leads → WhatsApp → Vendas;
+- registro manual de venda e valor por lead;
+- receita atribuída e taxa de conversão no dashboard;
+- abertura de WhatsApp por lead;
 - exportação de leads em CSV;
-- botão para WhatsApp;
-- painel demonstrativo do cliente;
-- login demo;
-- edição de nome, WhatsApp, horário, endereço, serviços e preços;
-- código demonstrativo de instalação;
-- pitch de venda copiável.
+- widget real instalável via `widget.js`;
+- instruções para site próprio, WordPress e link de demonstração;
+- dados persistidos localmente via `localStorage`.
 
 ## Modelos prontos
 
 - Barbearia
-- Açaí
+- Restaurante
 - Estética
 - Loja
-- Restaurante
 - Oficina
+- Clínica
+- Imobiliária
+- Açaí / Delivery
 
-## Login demo do painel
+## Fluxo comercial demonstrado
 
-E-mail:
+1. O cliente escolhe o segmento.
+2. Informa nome, WhatsApp, horário, serviço e endereço.
+3. O AtendeBot cria uma configuração inicial automaticamente.
+4. O visitante conversa com o bot.
+5. O bot captura interesse e contato.
+6. O lead aparece no painel.
+7. O comércio abre o WhatsApp pelo lead.
+8. Quando fechar a venda, registra o valor.
+9. O dashboard atualiza conversão e receita atribuída.
 
-```text
-cliente@demo.com
+## Instalação
+
+Exemplo:
+
+```html
+<script src="https://atendebot360.onrender.com/widget.js"
+  data-business="Meu Negócio"
+  data-whatsapp="5517999999999"></script>
 ```
 
-Senha:
+## Importante sobre esta fase
 
-```text
-123456
-```
+Esta versão ainda usa armazenamento local no navegador para painel, métricas e leads. O widget instalável funciona como atendimento e encaminhamento para WhatsApp, mas os leads de sites externos ainda não sincronizam com o dashboard.
 
-Nesta versão, os dados ficam no navegador usando `localStorage`. Para virar SaaS real, o próximo passo é criar backend com banco de dados, autenticação real e contas por cliente.
+Para transformar o produto em SaaS real, a próxima fase é:
 
-## Como vender
+- backend e banco de dados;
+- autenticação real;
+- contas por cliente;
+- multiempresas;
+- endpoint do widget para registrar conversas e leads;
+- planos e cobrança recorrente;
+- domínio/subdomínio por cliente;
+- integração oficial com WhatsApp quando fizer sentido.
 
-Oferta sugerida:
+## Oferta comercial sugerida para teste
 
-- Instalação/configuração: R$ 197 a R$ 697
-- Mensalidade de suporte: R$ 49 a R$ 97/mês
+- implantação/configuração: R$ 197 a R$ 497;
+- plano Essencial: R$ 79/mês;
+- plano Profissional: R$ 149/mês;
+- plano Negócios: R$ 249/mês.
 
-Mensagem comercial:
-
-> Crio um chatbot de atendimento automático para seu negócio responder clientes 24h por dia. Ele mostra preços, horários, serviços, endereço, captura nome e telefone do interessado e encaminha para o WhatsApp.
-
-## Próximos upgrades
-
-- Backend com banco de dados
-- Login real por cliente
-- Multiempresas
-- Subdomínio por cliente
-- Integração com WhatsApp API oficial
-- Painel administrativo do vendedor
-- Planos e cobrança recorrente
+Os preços acima são uma hipótese comercial para validação e podem ser ajustados conforme os primeiros clientes.
