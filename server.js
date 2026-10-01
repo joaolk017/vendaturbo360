@@ -1174,7 +1174,7 @@ async function updateOrder(userId, id, patch) {
     await pool.query(`UPDATE financial_entries SET status=$1,paid_at=CASE WHEN $1='paid' THEN COALESCE(paid_at,NOW()) ELSE paid_at END,updated_at=NOW()
       WHERE user_id=$2 AND source_type='order' AND source_id=$3`,[paymentStatus,userId,id]);
     const updated=publicOrder({...cur,status,payment_status:paymentStatus});
-    if(status==='cancelled')await syncOrderInventory360(userId,updated,'restore');
+    if(status==='cancelled'||paymentStatus==='refunded')await syncOrderInventory360(userId,updated,'restore');
     else if(paymentStatus==='paid'||['accepted','preparing','ready','out_for_delivery','completed'].includes(status))await syncOrderInventory360(userId,updated,'apply');
     return updated;
   }
@@ -1694,7 +1694,10 @@ async function handleWooviWebhook360(req,res,userId){
   if(charge.status!=='COMPLETED'){
     await pool.query('UPDATE pix_charges SET status=$1,paid_at=NOW(),provider_data=$2,updated_at=NOW() WHERE id=$3',['COMPLETED',JSON.stringify(body),charge.id]);
     const done=await completePixSource360(userId,charge.source_type,charge.source_id);
-    await notifyUser(userId,{title:'💰 PIX confirmado',body:(done?.kind==='order'?'Pedido pago automaticamente.':'Pagamento confirmado automaticamente.'),url:done?.kind==='order'?'/?view=orders':'/?view=appointments',tag:'pix-'+charge.id}).catch(()=>{});
+    const paidLabel=done?.kind==='order'
+      ?('Pedido '+(done.item?.code||'')+' • '+(done.item?.customerName||'cliente')+' • PIX confirmado')
+      :('Agendamento '+(done?.item?.code||'')+' • '+(done?.item?.customerName||'cliente')+' • PIX confirmado');
+    await notifyUser(userId,{title:'💰 PIX confirmado',body:paidLabel,url:done?.kind==='order'?'/?view=orders':'/?view=appointments',tag:'pix-'+charge.id}).catch(()=>{});
   }
   return json(res,200,{ok:true});
 }
