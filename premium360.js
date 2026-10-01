@@ -302,6 +302,7 @@
     const src=location.origin+'/widget.js';
     if(code)code.textContent='<!-- AtendeBot 360 Intelligence -->\n<script src="'+src+'" data-bot-id="'+id+'"><\\/script>';
     if(link)link.textContent=location.origin+'/?bot='+encodeURIComponent(id);
+    if(typeof refreshPublishTools==='function')refreshPublishTools();
   }
   function premiumRefresh(){
     defaults();fillBrain();enhanceInstall();loadAiStatus();
