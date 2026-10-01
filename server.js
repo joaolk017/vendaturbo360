@@ -1166,7 +1166,7 @@ async function updateTask(userId,id,patch){
 }
 async function operationsSummary(userId){
   if(!pool){
-    const leads=mem.leads.get(userId)||[],orders=mem.orders.get(userId)||[],appointments=mem.appointments.get(userId)||[],tasks=mem.tasks.get(userId)||[];
+    const leads=mem.leads.get(userId)||[],orders=mem.orders.get(userId)||[],appointments=mem.appointments.get(userId)||[],tasks=mem.tasks.get(userId)||[],stock=mem.inventory.get(userId)||[];
     const today=new Date().toISOString().slice(0,10);
     return {
       counters:{
@@ -1174,32 +1174,36 @@ async function operationsSummary(userId){
         openOrders:orders.filter(x=>!['completed','cancelled'].includes(x.status)).length,
         pendingPayments:orders.filter(x=>x.paymentStatus==='pending'&&!['cancelled'].includes(x.status)).length,
         todayAppointments:appointments.filter(x=>x.date===today&&x.status==='confirmed').length,
-        openTasks:tasks.filter(x=>x.status==='open').length
+        openTasks:tasks.filter(x=>x.status==='open').length,
+        lowStock:stock.filter(x=>x.active!==false&&Number(x.quantity||0)<=Number(x.minQuantity||0)).length
       },
-      orders:orders.slice(0,6),appointments:appointments.filter(x=>x.status==='confirmed').slice(0,6),leads:leads.filter(x=>x.status==='new').slice(0,6),tasks:tasks.filter(x=>x.status==='open').slice(0,8)
+      orders:orders.slice(0,6),appointments:appointments.filter(x=>x.status==='confirmed').slice(0,6),leads:leads.filter(x=>x.status==='new').slice(0,6),tasks:tasks.filter(x=>x.status==='open').slice(0,8),stock:stock.filter(x=>x.active!==false&&Number(x.quantity||0)<=Number(x.minQuantity||0)).slice(0,6)
     };
   }
-  const [counts,orders,appts,leads,tasks]=await Promise.all([
+  const [counts,orders,appts,leads,tasks,stock]=await Promise.all([
     pool.query(`
       SELECT
         (SELECT COUNT(*)::int FROM leads WHERE user_id=$1 AND status='new') new_leads,
         (SELECT COUNT(*)::int FROM orders WHERE user_id=$1 AND status NOT IN ('completed','cancelled')) open_orders,
         (SELECT COUNT(*)::int FROM orders WHERE user_id=$1 AND payment_status='pending' AND status<>'cancelled') pending_payments,
         (SELECT COUNT(*)::int FROM appointments WHERE user_id=$1 AND appointment_date=CURRENT_DATE AND status='confirmed') today_appointments,
-        (SELECT COUNT(*)::int FROM operational_tasks WHERE user_id=$1 AND status='open') open_tasks
+        (SELECT COUNT(*)::int FROM operational_tasks WHERE user_id=$1 AND status='open') open_tasks,
+        (SELECT COUNT(*)::int FROM inventory_items WHERE user_id=$1 AND active=TRUE AND quantity<=min_quantity) low_stock
     `,[userId]),
     pool.query("SELECT * FROM orders WHERE user_id=$1 AND status NOT IN ('completed','cancelled') ORDER BY created_at DESC LIMIT 6",[userId]),
     pool.query("SELECT * FROM appointments WHERE user_id=$1 AND status='confirmed' AND appointment_date>=CURRENT_DATE ORDER BY appointment_date,start_time LIMIT 6",[userId]),
     pool.query("SELECT id,name,phone,interest,status,value,created_at FROM leads WHERE user_id=$1 AND status='new' ORDER BY created_at DESC LIMIT 6",[userId]),
-    pool.query("SELECT * FROM operational_tasks WHERE user_id=$1 AND status='open' ORDER BY CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,COALESCE(due_at,'2999-12-31'::timestamptz),created_at DESC LIMIT 8",[userId])
+    pool.query("SELECT * FROM operational_tasks WHERE user_id=$1 AND status='open' ORDER BY CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,COALESCE(due_at,'2999-12-31'::timestamptz),created_at DESC LIMIT 8",[userId]),
+    pool.query("SELECT * FROM inventory_items WHERE user_id=$1 AND active=TRUE AND quantity<=min_quantity ORDER BY quantity ASC LIMIT 6",[userId])
   ]);
   const x=counts.rows[0]||{};
   return {
-    counters:{newLeads:Number(x.new_leads||0),openOrders:Number(x.open_orders||0),pendingPayments:Number(x.pending_payments||0),todayAppointments:Number(x.today_appointments||0),openTasks:Number(x.open_tasks||0)},
+    counters:{newLeads:Number(x.new_leads||0),openOrders:Number(x.open_orders||0),pendingPayments:Number(x.pending_payments||0),todayAppointments:Number(x.today_appointments||0),openTasks:Number(x.open_tasks||0),lowStock:Number(x.low_stock||0)},
     orders:orders.rows.map(publicOrder),
     appointments:appts.rows.map(appointmentPublic),
     leads:leads.rows.map(x=>({id:x.id,name:x.name,phone:x.phone,interest:x.interest,status:x.status,value:Number(x.value||0),date:new Date(x.created_at).toLocaleString('pt-BR')})),
-    tasks:tasks.rows.map(taskPublic)
+    tasks:tasks.rows.map(taskPublic),
+    stock:stock.rows.map(inventoryPublic)
   };
 }
 
