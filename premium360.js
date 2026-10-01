@@ -323,7 +323,7 @@
     if(document.getElementById('at360-executive-style'))return;
     const style=document.createElement('style');
     style.id='at360-executive-style';
-    style.textContent=\`
+    style.textContent=`
       :root{
         --bg:#f5f7fb;--surface:#ffffff;--ink:#0b1220;--muted:#667085;--line:#e7eaf0;
         --nav:#09111f;--brand:#4f46e5;--brand2:#7c3aed;--green:#12b76a;
@@ -528,7 +528,7 @@
         .panel,.intel-card,.mg-panel,.ops-panel{border-radius:16px!important}
         .at-auth-brand{padding:24px!important}.at-auth-brand h2{font-size:29px!important}.at-auth-formwrap{padding:22px!important}
       }
-    \`;
+    `;
     document.head.appendChild(style);
   }
 
