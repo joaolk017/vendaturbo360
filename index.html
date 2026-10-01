@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>AtendeBot 360 | Central de Atendimento</title>
-  <meta name="description" content="Crie um atendente virtual para captar leads, encaminhar clientes ao WhatsApp e acompanhar conversões." />
+  <meta name="theme-color" content="#09111f" />
+  <title>AtendeBot 360 | Central Operacional Inteligente</title>
+  <meta name="description" content="Central operacional inteligente para atendimento, pedidos, agenda, clientes, equipe, financeiro e estoque." />
   <style>
     :root{--bg:#f4f7fb;--surface:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--nav:#0b1220;--brand:#5b5cf0;--brand2:#7c3aed;--green:#10b981;--shadow:0 18px 50px rgba(15,23,42,.08)}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}button,input,textarea,select{font:inherit}button{cursor:pointer}a{text-decoration:none;color:inherit}
@@ -103,15 +104,15 @@
     <div class="workspace"><div class="avatar">AB</div><div><b id="sideBusiness">Barbearia Demo</b><small id="sideModel">Modelo Barbearia</small></div></div>
     <button class="create-side" onclick="startWizard()">＋ Criar meu atendente<span>Configure em poucos minutos</span></button>
     <div class="nav-title">Principal</div>
-    <button class="nav-btn active" data-view="dashboard"><span class="ico">⌂</span>Visão geral</button>
-    <button class="nav-btn" data-view="chatbot"><span class="ico">◈</span>Meu chatbot</button>
+    <button class="nav-btn active" data-view="dashboard"><span class="ico">⌂</span>Visão executiva</button>
+    <button class="nav-btn" data-view="chatbot"><span class="ico">◈</span>Assistente 360</button>
     <button class="nav-btn" data-view="templates"><span class="ico">▦</span>Modelos</button>
     <button class="nav-btn" data-view="leads"><span class="ico">◎</span>Leads <span id="navLeadCount" style="margin-left:auto;background:#25334d;padding:2px 7px;border-radius:999px;font-size:10px">0</span></button>
     <button class="nav-btn" data-view="orders"><span class="ico">▤</span>Pedidos <span id="navOrderCount" style="margin-left:auto;background:#25334d;padding:2px 7px;border-radius:999px;font-size:10px">0</span></button>
     <div class="nav-title">Configuração</div>
-    <button class="nav-btn" data-view="install"><span class="ico">⌘</span>Instalação</button>
+    <button class="nav-btn" data-view="install"><span class="ico">⌘</span>Publicar & compartilhar</button>
     <button class="nav-btn" data-view="settings"><span class="ico">⚙</span>Configurações</button>
-    <div class="sidebar-foot"><div class="plan"><strong>Plano Profissional</strong><p>Demo comercial com captação de leads e acompanhamento de conversões.</p><button onclick="showToast('Planos comerciais serão conectados à cobrança')">Gerenciar plano</button></div></div>
+    <div class="sidebar-foot"><div class="plan"><strong>AtendeBot 360 Pro</strong><p>Operação completa com automações, gestão e experiência omnicanal.</p><button onclick="showToast('Planos comerciais serão conectados à cobrança')">Gerenciar plano</button></div></div>
   </aside>
 
   <main class="main">
