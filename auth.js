@@ -124,14 +124,30 @@
     clearTimeout(syncTimer);
     try{
       await api('/api/state',{method:'PUT',body:JSON.stringify({config,metrics})});
-      await api('/api/leads',{method:'DELETE'});
-      for(const l of leads){
-        await api('/api/leads',{method:'POST',body:JSON.stringify({
-          name:l.name,phone:l.phone,interest:l.interest,status:l.status||'new',value:Number(l.value||0)
-        })});
+      const remote=await api('/api/state');
+      const remoteById=new Map((remote.leads||[]).filter(x=>x.id).map(x=>[x.id,x]));
+      for(let i=0;i<leads.length;i++){
+        const l=leads[i];
+        if(l.id&&remoteById.has(l.id)){
+          await api('/api/leads/'+encodeURIComponent(l.id),{method:'PATCH',body:JSON.stringify({
+            status:l.status||'new',value:Number(l.value||0)
+          })});
+          remoteById.delete(l.id);
+        }else if(!l.id){
+          const created=await api('/api/leads',{method:'POST',body:JSON.stringify({
+            name:l.name,phone:l.phone,interest:l.interest,status:l.status||'new',value:Number(l.value||0)
+          })});
+          if(created.lead) leads[i]={...l,...created.lead,date:l.date||created.lead.date};
+        }
       }
+      for(const fresh of remoteById.values()){
+        if(!leads.some(x=>x.id===fresh.id)) leads.unshift(fresh);
+      }
+      localStorage.setItem('at360_leads',JSON.stringify(leads));
+      if(typeof updateUI==='function') updateUI();
       cloud.textContent='● dados sincronizados';
     }catch(e){
+      console.error('Falha de sincronização:',e);
       cloud.textContent='● sincronização pendente';
     }finally{syncing=false}
   }
