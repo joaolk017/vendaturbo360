@@ -31,15 +31,25 @@
     if(!d.close) d.close='14:00';
     d.deliveryFee=Math.max(0,Number(d.deliveryFee||0));
     d.minimumOrder=Math.max(0,Number(d.minimumOrder||0));
+    if(!Array.isArray(d.categories)) d.categories=[];
+    if(!d.zones||typeof d.zones!=='object') d.zones={mode:'flat',neighborhoods:[],origin:{lat:0,lng:0},radiusBands:[]};
+    if(!['flat','neighborhood','radius'].includes(d.zones.mode)) d.zones.mode='flat';
+    if(!Array.isArray(d.zones.neighborhoods)) d.zones.neighborhoods=[];
+    if(!d.zones.origin||typeof d.zones.origin!=='object') d.zones.origin={lat:0,lng:0};
+    if(!Array.isArray(d.zones.radiusBands)) d.zones.radiusBands=[];
     if(!Array.isArray(d.catalog)) d.catalog=[];
     d.catalog=d.catalog.map(function(p,i){
       return {
         id:String(p.id||id('item')),
-        kind:p.kind==='addon'?'addon':'product',
+        kind:p.kind==='addon'?'addon':(p.kind==='combo'?'combo':'product'),
         name:String(p.name||('Item '+(i+1))),
         description:String(p.description||''),
         price:Math.max(0,Number(p.price||0)),
         image:String(p.image||''),
+        category:String(p.category||''),
+        unit:['un','pack','fardo','caixa','kit'].includes(p.unit)?p.unit:'un',
+        packQty:Math.max(1,Math.min(999,Number(p.packQty||1))),
+        comboItems:Array.isArray(p.comboItems)?p.comboItems.map(x=>({id:String(x.id||''),qty:Math.max(1,Math.min(99,Number(x.qty||1)))})).filter(x=>x.id):[],
         available:p.available!==false
       };
     });
@@ -153,10 +163,14 @@
     d.catalog.push({
       id:id(kind==='addon'?'extra':'item'),
       kind:kind,
-      name:kind==='addon'?'Novo adicional':'Novo prato',
+      name:kind==='addon'?'Novo adicional':'Novo produto',
       description:'',
       price:0,
       image:'',
+      category:'',
+      unit:'un',
+      packQty:1,
+      comboItems:[],
       available:true
     });
     render();
