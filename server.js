@@ -833,10 +833,10 @@ function normalizeAppointmentConfig(cfg) {
 }
 async function bookedSlots(userId,date,professionalId) {
   if(pool){
-    const r=await pool.query("SELECT start_time FROM appointments WHERE user_id=$1 AND appointment_date=$2 AND professional_id=$3 AND status<>'cancelled'",[userId,date,professionalId]);
-    return new Set(r.rows.map(x=>String(x.start_time).slice(0,5)));
+    const r=await pool.query("SELECT start_time,duration_minutes FROM appointments WHERE user_id=$1 AND appointment_date=$2 AND professional_id=$3 AND status<>'cancelled'",[userId,date,professionalId]);
+    return r.rows.map(x=>({time:String(x.start_time).slice(0,5),duration:Math.max(10,Number(x.duration_minutes||30))}));
   }
-  return new Set((mem.appointments.get(userId)||[]).filter(x=>x.date===date&&x.professionalId===professionalId&&x.status!=='cancelled').map(x=>x.time));
+  return (mem.appointments.get(userId)||[]).filter(x=>x.date===date&&x.professionalId===professionalId&&x.status!=='cancelled').map(x=>({time:x.time,duration:Math.max(10,Number(x.duration||30))}));
 }
 async function listAvailability(userId,cfg,date,professionalId,serviceId) {
   const a=normalizeAppointmentConfig(cfg);
@@ -861,7 +861,11 @@ async function listAvailability(userId,cfg,date,professionalId,serviceId) {
   const slots=[];
   for(let t=start;t+duration<=end;t+=step){
     const time=hhmm(t);
-    if(booked.has(time))continue;
+    const overlaps=booked.some(b=>{
+      const bs=minutesOf(b.time);
+      return bs!=null && t < bs+b.duration && t+duration > bs;
+    });
+    if(overlaps)continue;
     if(date===today){
       const current=now.getHours()*60+now.getMinutes()+15;
       if(t<=current)continue;
