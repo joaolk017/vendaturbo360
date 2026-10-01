@@ -19,7 +19,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh;max-width:1180px;marg
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:14px}.field{display:block;font-size:10px;font-weight:900;color:#334155}.field input,.field textarea{width:100%;margin-top:6px;border:1px solid #dbe3ee;border-radius:11px;padding:11px 12px;outline:none}.field textarea{min-height:76px;resize:vertical}.wide{grid-column:1/-1}.address-fields{display:none}.address-fields.show{display:grid}
 .summary{margin-top:16px;border-radius:16px;background:#f8fafc;border:1px solid var(--line);padding:14px}.summary-row{display:flex;justify-content:space-between;gap:12px;font-size:11px;padding:5px 0}.summary-row.total{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;font-size:14px;font-weight:900}.send-order{width:100%;margin-top:13px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:0;border-radius:13px;padding:13px;font-weight:900}.send-order:disabled{opacity:.55}
 .chat{display:none;margin-top:18px;border:1px solid var(--line);border-radius:20px;overflow:hidden}.chat.show{display:block}.chat-head{padding:16px 18px;background:#0f172a;color:#fff}.chat-head b{display:block}.chat-head small{color:#86efac}.messages{height:360px;overflow:auto;background:#f8fafc;padding:15px;display:flex;flex-direction:column;gap:9px}.msg{max-width:82%;padding:10px 12px;border-radius:14px;font-size:12px;line-height:1.5}.msg.bot{background:#fff;border:1px solid var(--line);border-bottom-left-radius:5px}.msg.user{margin-left:auto;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border-bottom-right-radius:5px}.chat-form{display:flex;gap:8px;padding:11px;border-top:1px solid var(--line)}.chat-form input{flex:1;min-width:0;border:1px solid var(--line);border-radius:11px;padding:11px}.chat-form button{border:0;border-radius:11px;background:var(--brand);color:#fff;font-weight:900;padding:0 16px}
-.success{display:none;margin-top:18px;padding:23px;border-radius:20px;background:#ecfdf5;border:1px solid #bbf7d0;text-align:center}.success.show{display:block}.success .check{width:58px;height:58px;border-radius:18px;background:#16a34a;color:#fff;display:grid;place-items:center;font-size:28px;margin:0 auto 12px}.success h3{margin:0}.success p{color:#475569;font-size:12px;line-height:1.55}.order-code{font-size:24px;font-weight:900;letter-spacing:.02em}
+.success{display:none;margin-top:18px;padding:23px;border-radius:20px;background:#ecfdf5;border:1px solid #bbf7d0;text-align:center}.success.show{display:block}.success .check{width:58px;height:58px;border-radius:18px;background:#16a34a;color:#fff;display:grid;place-items:center;font-size:28px;margin:0 auto 12px}.success h3{margin:0}.success p{color:#475569;font-size:12px;line-height:1.55}.order-code{font-size:24px;font-weight:900;letter-spacing:.02em}.auto-pix-pay{display:none;margin:16px auto 0;max-width:480px;padding:15px;border-radius:16px;background:#fff;border:1px solid #bbf7d0;text-align:left}.auto-pix-pay.show{display:grid;grid-template-columns:130px 1fr;gap:13px;align-items:center}.auto-pix-pay img{width:130px;height:130px;object-fit:contain;background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:5px}.auto-pix-pay h4{margin:0 0 6px;font-size:13px}.auto-pix-pay p{margin:0 0 8px;font-size:10px}.auto-pix-code{font-size:8px;line-height:1.35;background:#f8fafc;border:1px solid #e2e8f0;padding:8px;border-radius:9px;word-break:break-all;max-height:70px;overflow:auto}.auto-pix-copy{width:100%;margin-top:7px;border:0;border-radius:9px;background:#0f172a;color:#fff;padding:8px;font-size:9px;font-weight:900}.pix-paid-badge{display:none;margin-top:9px;padding:9px;border-radius:10px;background:#dcfce7;color:#166534;font-size:10px;font-weight:900}.pix-paid-badge.show{display:block}@media(max-width:560px){.auto-pix-pay.show{grid-template-columns:1fr;text-align:center}.auto-pix-pay img{margin:auto}}
 .footer{padding:18px 22px 28px;text-align:center;color:#94a3b8;font-size:10px}
 @media(max-width:760px){.shell{box-shadow:none}.hero{padding:20px 15px}.hero-top{align-items:center}.logo{width:44px;height:44px;border-radius:14px}.hero h2{font-size:27px;margin-top:28px}.hero-copy{font-size:12px}.open-pill{font-size:9px;padding:7px 9px}.trust{gap:6px}.trust div{padding:9px 7px}.trust b{font-size:10px}.trust span{font-size:8px}.content{padding:15px}.products{grid-template-columns:1fr}.product p{min-height:0}.grid{grid-template-columns:1fr}.wide{grid-column:auto}.messages{height:330px}.msg{max-width:90%}.hero-actions{display:grid;grid-template-columns:1fr 1fr}.cta{padding:11px 9px;font-size:12px}}
 </style>
@@ -88,6 +88,10 @@ button,input,textarea{font:inherit}.shell{min-height:100vh;max-width:1180px;marg
       <p>Seu pedido foi enviado para o estabelecimento e já aparece no painel de atendimento.</p>
       <div class="order-code" id="orderCode"></div>
       <p id="orderStatusText">Aguardando confirmação.</p>
+      <div class="auto-pix-pay" id="autoPixPay">
+        <img id="autoPixQr" alt="QR Code PIX">
+        <div><h4>⚡ Pague com PIX</h4><p>O pagamento será confirmado automaticamente.</p><div class="auto-pix-code" id="autoPixCode"></div><button class="auto-pix-copy" id="autoPixCopy">Copiar PIX copia e cola</button><div class="pix-paid-badge" id="pixPaidBadge">✓ Pagamento confirmado automaticamente</div></div>
+      </div>
     </section>
 
     <section class="chat" id="chat">
@@ -157,6 +161,30 @@ function renderSummary(){
 document.querySelectorAll('.choice').forEach(b=>b.onclick=()=>{fulfillment=b.dataset.kind;document.querySelectorAll('.choice').forEach(x=>x.classList.toggle('active',x===b));el('addressFields').classList.toggle('show',fulfillment==='delivery');el('pickupBox').style.display=fulfillment==='pickup'?'block':'none';renderSummary()});
 el('orderBtn').onclick=()=>{el('orderFlow').classList.add('show');el('chat').classList.remove('show');el('orderFlow').scrollIntoView({behavior:'smooth',block:'start'})};
 el('chatBtn').onclick=()=>{el('chat').classList.add('show');el('orderFlow').classList.remove('show');el('chat').scrollIntoView({behavior:'smooth',block:'start'})};
+let paymentPoll=null;
+function showAutomaticPix(order){
+  const pix=order?.pix;if(!pix?.brCode)return;
+  el('autoPixCode').textContent=pix.brCode;
+  el('autoPixQr').src='/api/qr?data='+encodeURIComponent(pix.brCode);
+  el('autoPixPay').classList.add('show');
+  el('orderStatusText').textContent='Total '+money(order.total)+' • aguardando pagamento PIX.';
+  el('autoPixCopy').onclick=async()=>{try{await navigator.clipboard.writeText(pix.brCode);el('autoPixCopy').textContent='PIX copiado ✓';setTimeout(()=>el('autoPixCopy').textContent='Copiar PIX copia e cola',1800)}catch{}};
+  clearInterval(paymentPoll);
+  let attempts=0;
+  paymentPoll=setInterval(async()=>{
+    attempts++;
+    try{
+      const r=await fetch('/api/public/bot/'+encodeURIComponent(botId)+'/orders/'+encodeURIComponent(order.id)+'/status');
+      const data=await r.json().catch(()=>({}));
+      if(r.ok&&data.paymentStatus==='paid'){
+        clearInterval(paymentPoll);
+        el('pixPaidBadge').classList.add('show');
+        el('orderStatusText').textContent='Pagamento confirmado • pedido enviado ao estabelecimento.';
+      }
+    }catch{}
+    if(attempts>=200)clearInterval(paymentPoll);
+  },3000);
+}
 el('sendOrder').onclick=async()=>{
   el('orderError').textContent='';
   const chosen=selected();
@@ -171,6 +199,7 @@ el('sendOrder').onclick=async()=>{
     if(!r.ok)throw new Error(data.error||'Não foi possível enviar o pedido.');
     el('orderCode').textContent=data.order.code;
     el('orderStatusText').textContent='Total '+money(data.order.total)+' • '+(data.order.fulfillment==='delivery'?'Entrega':'Retirada')+' • aguardando confirmação.';
+    if(data.order.pix?.brCode)showAutomaticPix(data.order);
     el('orderFlow').classList.remove('show');el('success').classList.add('show');el('success').scrollIntoView({behavior:'smooth'});
   }catch(e){el('orderError').textContent=e.message}
   finally{el('sendOrder').disabled=false;el('sendOrder').textContent='Confirmar pedido'}
