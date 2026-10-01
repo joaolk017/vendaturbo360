@@ -1561,7 +1561,6 @@ async function createWooviCharge360(userId,{sourceType,sourceId,amount,comment,c
   const appId=decryptSecret(integration.app_id_encrypted);if(!appId)return null;
   const correlationID=('at360-'+sourceType+'-'+sourceId).slice(0,120),value=Math.max(1,Math.round(Number(amount||0)*100));
   const payload={correlationID,value,comment:String(comment||'Cobrança AtendeBot 360').slice(0,140)};
-  if(customer?.name||customer?.phone)payload.customer={name:String(customer?.name||'Cliente').slice(0,120),phone:String(customer?.phone||'').slice(0,20)};
   const r=await fetch('https://api.woovi.com/api/v1/charge',{method:'POST',headers:{'Authorization':appId,'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const data=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(data?.error||data?.message||'Não foi possível criar a cobrança Pix.');
