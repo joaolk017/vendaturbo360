@@ -88,13 +88,16 @@
     if(!res.ok) throw new Error(data.error||'Não foi possível concluir a operação.');
     return data;
   }
+  window.at360Api=api;
 
   async function loadAccount(){
     if(!token){overlay.classList.add('show');return false}
     try{
       const me=await api('/api/me');
+      window.at360Account=me.user;
       const state=await api('/api/state');
       if(state.config) config={...config,...state.config};
+      config={...config,botId:me.user.id};
       if(state.metrics) metrics={...metrics,...state.metrics};
       if(Array.isArray(state.leads)) leads=state.leads;
       fillForms();renderTemplates();updateUI();
@@ -153,6 +156,8 @@
         password:document.getElementById('atLoginPass').value
       })});
       token=data.token;localStorage.setItem(TOKEN_KEY,token);
+      window.at360Account=data.user;
+      config={...config,botId:data.user.id};
       await loadAccount();
     }catch(e){err.textContent=e.message}
     finally{btn.disabled=false;btn.textContent='Entrar no painel'}
@@ -170,7 +175,8 @@
         password:document.getElementById('atRegisterPass').value
       })});
       token=data.token;localStorage.setItem(TOKEN_KEY,token);
-      config={...config,businessName:businessName||config.businessName};
+      window.at360Account=data.user;
+      config={...config,businessName:businessName||config.businessName,botId:data.user.id};
       originalSaveAll();
       await syncAll();
       await loadAccount();
