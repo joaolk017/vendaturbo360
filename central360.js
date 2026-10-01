@@ -88,7 +88,10 @@
       {name:'Chatbot + IA',sub:'Atendimento e qualificação',on:true,icon:'🧠',view:'chatbot'},
       {name:'CRM 360',sub:'Leads e oportunidades',on:true,icon:'◎',view:'leads'},
       {name:'Clientes 360',sub:'Histórico e relacionamento',on:true,icon:'👥',view:'customers'},
-      {name:'Financeiro 360',sub:'Caixa, PIX e movimentações',on:true,icon:'R
+      {name:'Financeiro 360',sub:'Caixa, PIX e movimentações',on:true,icon:'💰',view:'finance'},
+      {name:'Equipe 360',sub:'Pessoas e funções',on:true,icon:'♟',view:'team'},
+      {name:'Estoque 360',sub:'Produtos e reposição',on:stock,icon:'▣',view:'inventory'},
+      {name:'Pedidos',sub:'Venda, entrega e retirada',on:commerce,icon:'▤',view:'orders'},
       {name:'Cardápio / Catálogo',sub:'Produtos e adicionais',on:commerce,icon:'🍽',view:'menu'},
       {name:'Agenda 360',sub:'Horários e profissionais',on:schedule,icon:'◷',view:'appointments'},
       {name:'Growth 360',sub:'Inteligência de conversão',on:true,icon:'↗',view:'growth'}
@@ -100,11 +103,17 @@
     box.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>goView(b.dataset.module));
   }
   function quickButtons(){
-    const t=config?.template||'barbearia',commerce=['marmitex','restaurante','acai','loja'].includes(t),schedule=['barbearia','estetica','clinica','oficina','imobiliaria'].includes(t),stock=['marmitex','restaurante','acai','loja','oficina','barbearia'].includes(t);
+    const t=config?.template||'barbearia';
+    const commerce=['marmitex','restaurante','acai','loja'].includes(t);
+    const schedule=['barbearia','estetica','clinica','oficina','imobiliaria'].includes(t);
+    const stock=['marmitex','restaurante','acai','loja','oficina','barbearia'].includes(t);
     const arr=[
       {icon:'💬',title:'Testar chatbot',sub:'Abrir atendimento',action:'chat'},
       {icon:'👥',title:'Clientes',sub:'Histórico completo',view:'customers'},
-      {icon:'R
+      {icon:'💰',title:'Financeiro',sub:'Caixa e PIX',view:'finance'},
+      {icon:'♟',title:'Equipe',sub:'Pessoas e funções',view:'team'}
+    ];
+    if(stock)arr.push({icon:'▣',title:'Estoque',sub:'Alertas e quantidades',view:'inventory'});
     if(commerce)arr.push({icon:'▤',title:'Pedidos',sub:'Fila operacional',view:'orders'},{icon:'🍽',title:'Cardápio',sub:'Editar produtos',view:'menu'});
     if(schedule)arr.push({icon:'◷',title:'Agenda',sub:'Horários marcados',view:'appointments'},{icon:'📅',title:'Página cliente',sub:'Testar marcação',action:'public'});
     arr.push({icon:'↗',title:'Growth',sub:'Conversão e gargalos',view:'growth'});
