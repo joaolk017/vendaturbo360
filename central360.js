@@ -81,9 +81,9 @@
   }
   function moduleConfig(){
     const t=config?.template||'barbearia';
-    const commerce=['marmitex','restaurante','acai','loja'].includes(t);
+    const commerce=['marmitex','restaurante','acai','loja','adega','tabacaria'].includes(t);
     const schedule=['barbearia','estetica','clinica','oficina','imobiliaria'].includes(t);
-    const stock=['marmitex','restaurante','acai','loja','oficina','barbearia'].includes(t);
+    const stock=['marmitex','restaurante','acai','loja','adega','tabacaria','oficina','barbearia'].includes(t);
     return [
       {name:'Chatbot + IA',sub:'Atendimento e qualificação',on:true,icon:'🧠',view:'chatbot'},
       {name:'CRM 360',sub:'Leads e oportunidades',on:true,icon:'◎',view:'leads'},
@@ -105,9 +105,9 @@
   }
   function quickButtons(){
     const t=config?.template||'barbearia';
-    const commerce=['marmitex','restaurante','acai','loja'].includes(t);
+    const commerce=['marmitex','restaurante','acai','loja','adega','tabacaria'].includes(t);
     const schedule=['barbearia','estetica','clinica','oficina','imobiliaria'].includes(t);
-    const stock=['marmitex','restaurante','acai','loja','oficina','barbearia'].includes(t);
+    const stock=['marmitex','restaurante','acai','loja','adega','tabacaria','oficina','barbearia'].includes(t);
     const arr=[
       {icon:'💬',title:'Testar chatbot',sub:'Abrir atendimento',action:'chat'},
       {icon:'👥',title:'Clientes',sub:'Histórico completo',view:'customers'},
