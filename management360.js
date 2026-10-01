@@ -20,7 +20,7 @@
   `;
   document.head.appendChild(css);
 
-  let customers=[],selectedCustomer=null,finance=null,team=[],inventory=[];
+  let customers=[],selectedCustomer=null,finance=null,paymentIntegration=null,team=[],inventory=[];
 
   const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -125,7 +125,12 @@
   }
 
   let finFilter='all';
-  async function loadFinance(){try{finance=await window.at360Api('/api/finance/summary');renderFinance()}catch(e){showToast('Não foi possível carregar o financeiro')}}
+  async function loadFinance(){
+    try{
+      const results=await Promise.all([window.at360Api('/api/finance/summary'),window.at360Api('/api/payments/integration').catch(()=>null)]);
+      finance=results[0];paymentIntegration=results[1];renderFinance();
+    }catch(e){showToast('Não foi possível carregar o financeiro')}
+  }
   function renderFinance(){
     if(!finance)return;
     document.getElementById('finBalance').textContent=money(finance.balance);document.getElementById('finMonthIncome').textContent=money(finance.monthIncome);document.getElementById('finMonthExpense').textContent=money(finance.monthExpense);document.getElementById('finPending').textContent=money(finance.pendingIncome);
@@ -134,32 +139,77 @@
     box.querySelectorAll('[data-fin-paid]').forEach(b=>b.onclick=async()=>{await window.at360Api('/api/finance/entries/'+encodeURIComponent(b.dataset.finPaid),{method:'PATCH',body:JSON.stringify({status:'paid'})});loadFinance()});
     document.getElementById('financeSummaryBox').innerHTML='<div class="customer-stats"><div class="customer-stat"><small>TOTAL ENTRADAS</small><b>'+money(finance.incomePaid)+'</b></div><div class="customer-stat"><small>TOTAL SAÍDAS</small><b>'+money(finance.expensePaid)+'</b></div><div class="customer-stat"><small>SALDO</small><b>'+money(finance.balance)+'</b></div></div>';
     const f=config.finance||{};document.getElementById('pixKey').value=f.pixKey||'';document.getElementById('pixName').value=f.pixName||config.businessName||'';document.getElementById('pixCity').value=f.pixCity||'JALES';
+    const status=document.getElementById('autoPixStatus'),urlBox=document.getElementById('wooviWebhookBox'),url=document.getElementById('wooviWebhookUrl');
+    if(status){
+      if(paymentIntegration?.configured&&paymentIntegration?.active)status.innerHTML='✅ <b>PIX automático ativo</b><br>Novos pedidos geram cobrança dinâmica e o webhook confirma pagamentos.';
+      else status.innerHTML='Ainda não conectado. Cole o App ID da conta Woovi do estabelecimento.';
+    }
+    if(urlBox&&url){urlBox.style.display=paymentIntegration?.webhookUrl?'block':'none';url.textContent=paymentIntegration?.webhookUrl||''}
   }
   async function addFinance(e){e.preventDefault();try{await window.at360Api('/api/finance/entries',{method:'POST',body:JSON.stringify({type:document.getElementById('finType').value,amount:Number(document.getElementById('finAmount').value||0),description:document.getElementById('finDescription').value.trim()||'Lançamento manual',method:document.getElementById('finMethod').value,status:document.getElementById('finStatus').value})});e.target.reset();showToast('Lançamento adicionado');loadFinance()}catch(err){showToast(err.message||'Erro no lançamento')}}
   function savePixSettings(){config.finance={...(config.finance||{}),pixKey:document.getElementById('pixKey').value.trim(),pixName:document.getElementById('pixName').value.trim(),pixCity:document.getElementById('pixCity').value.trim().toUpperCase()};saveAll();showToast('Dados PIX salvos')}
   async function generatePix(){savePixSettings();try{const r=await window.at360Api('/api/finance/pix',{method:'POST',body:JSON.stringify({amount:Number(document.getElementById('pixAmount').value||0)})});document.getElementById('pixCode').textContent=r.payload;document.getElementById('pixQr').src='/api/qr?data='+encodeURIComponent(r.payload);document.getElementById('pixResult').classList.add('show')}catch(e){showToast(e.message||'Não foi possível gerar PIX')}}
   async function copyPix(){const t=document.getElementById('pixCode').textContent;if(!t)return;await navigator.clipboard.writeText(t);showToast('Código PIX copiado')}
+  async function connectWoovi(){
+    const appId=document.getElementById('wooviAppId').value.trim();
+    if(!appId&&!paymentIntegration?.configured){showToast('Cole o App ID da Woovi');return}
+    const b=document.getElementById('connectWoovi');b.disabled=true;b.textContent='Conectando...';
+    try{
+      paymentIntegration=await window.at360Api('/api/payments/integration',{method:'POST',body:JSON.stringify({provider:'woovi',appId,active:true})});
+      document.getElementById('wooviAppId').value='';
+      showToast('PIX automático conectado');
+      renderFinance();
+    }catch(e){showToast(e.message||'Não foi possível conectar a Woovi')}
+    finally{b.disabled=false;b.textContent='Conectar e ativar webhook'}
+  }
 
   async function loadTeam(){try{const r=await window.at360Api('/api/team');team=r.members||[];renderTeam()}catch(e){showToast('Não foi possível carregar equipe')}}
-  function renderTeam(){document.getElementById('teamCount').textContent=team.filter(x=>x.active).length+' ativos • '+team.length+' cadastrados';const b=document.getElementById('teamList');b.innerHTML=team.length?team.map(x=>'<div class="team-card"><div class="team-top"><div><b>'+esc(x.name)+'</b><small>'+esc(x.role)+(x.phone?' • '+esc(x.phone):'')+'</small></div><span class="'+(x.active?'mg-on':'mg-off')+'" style="padding:5px 7px;border-radius:999px;font-size:8px;font-weight:900">'+(x.active?'Ativo':'Inativo')+'</span></div><div class="team-actions"><button class="'+(x.active?'mg-off':'mg-on')+'" data-team-toggle="'+esc(x.id)+'">'+(x.active?'Desativar':'Ativar')+'</button></div></div>').join(''):'<div class="mg-empty">Nenhum membro cadastrado.</div>';b.querySelectorAll('[data-team-toggle]').forEach(btn=>btn.onclick=async()=>{const x=team.find(y=>y.id===btn.dataset.teamToggle);await window.at360Api('/api/team/'+encodeURIComponent(x.id),{method:'PATCH',body:JSON.stringify({active:!x.active})});loadTeam()})}
-  async function addTeam(e){e.preventDefault();try{await window.at360Api('/api/team',{method:'POST',body:JSON.stringify({name:document.getElementById('teamName').value.trim(),role:document.getElementById('teamRole').value.trim(),phone:document.getElementById('teamPhone').value,email:document.getElementById('teamEmail').value.trim()})});e.target.reset();showToast('Membro adicionado');loadTeam()}catch(err){showToast(err.message||'Erro ao adicionar')}}
+  function renderTeam(){
+    document.getElementById('teamCount').textContent=team.filter(x=>x.active).length+' ativos • '+team.length+' cadastrados';
+    const b=document.getElementById('teamList');
+    b.innerHTML=team.length?team.map(x=>'<div class="team-card"><div class="team-top"><div><b>'+esc(x.name)+'</b><small>'+esc(x.role)+(x.phone?' • '+esc(x.phone):'')+'</small>'+(x.access?'<span class="access-badge">🔐 '+esc(x.access.email)+' • '+esc(x.access.role)+'</span>':'<span class="access-badge" style="background:#f1f5f9;color:#64748b">Sem login</span>')+'</div><span class="'+(x.active?'mg-on':'mg-off')+'" style="padding:5px 7px;border-radius:999px;font-size:8px;font-weight:900">'+(x.active?'Ativo':'Inativo')+'</span></div><div class="team-actions"><button class="'+(x.active?'mg-off':'mg-on')+'" data-team-toggle="'+esc(x.id)+'">'+(x.active?'Desativar':'Ativar')+'</button>'+(x.access?'<button class="'+(x.access.active?'mg-off':'mg-on')+'" data-access-toggle="'+esc(x.access.id)+'|'+(x.access.active?'0':'1')+'">'+(x.access.active?'Bloquear login':'Liberar login')+'</button><button class="mg-on" data-access-reset="'+esc(x.access.id)+'">Nova senha</button>':'')+'</div></div>').join(''):'<div class="mg-empty">Nenhum membro cadastrado.</div>';
+    b.querySelectorAll('[data-team-toggle]').forEach(btn=>btn.onclick=async()=>{const x=team.find(y=>y.id===btn.dataset.teamToggle);await window.at360Api('/api/team/'+encodeURIComponent(x.id),{method:'PATCH',body:JSON.stringify({active:!x.active})});loadTeam()});
+    b.querySelectorAll('[data-access-toggle]').forEach(btn=>btn.onclick=async()=>{const [id,v]=btn.dataset.accessToggle.split('|');await window.at360Api('/api/staff/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({active:v==='1',role:'attendant'})});loadTeam()});
+    b.querySelectorAll('[data-access-reset]').forEach(btn=>btn.onclick=async()=>{const pass=prompt('Digite a nova senha (mínimo 6 caracteres):');if(!pass)return;try{await window.at360Api('/api/staff/'+encodeURIComponent(btn.dataset.accessReset),{method:'PATCH',body:JSON.stringify({password:pass,role:'attendant'})});showToast('Senha atualizada')}catch(e){showToast(e.message)}});
+  }
+  function selectedPermissions(){return [...document.querySelectorAll('#teamPermissions input:checked')].map(x=>x.value)}
+  function applyRolePreset(){
+    const presets={manager:['central','customers','leads','orders','appointments','finance','inventory','team','growth'],attendant:['central','customers','leads','orders','appointments'],professional:['central','customers','appointments'],finance:['central','customers','finance'],stock:['central','inventory','orders']};
+    const role=document.getElementById('teamAccessRole').value,p=presets[role]||[];
+    document.querySelectorAll('#teamPermissions input').forEach(x=>x.checked=p.includes(x.value));
+  }
+  async function addTeam(e){
+    e.preventDefault();
+    try{
+      const created=await window.at360Api('/api/team',{method:'POST',body:JSON.stringify({name:document.getElementById('teamName').value.trim(),role:document.getElementById('teamRole').value.trim(),phone:document.getElementById('teamPhone').value,email:document.getElementById('teamEmail').value.trim()})});
+      const loginEmail=document.getElementById('teamLoginEmail').value.trim(),loginPass=document.getElementById('teamLoginPass').value;
+      if(loginEmail||loginPass){
+        if(!loginEmail||loginPass.length<6)throw new Error('Para criar o login, informe e-mail e senha com pelo menos 6 caracteres.');
+        await window.at360Api('/api/team/'+encodeURIComponent(created.member.id)+'/access',{method:'POST',body:JSON.stringify({email:loginEmail,password:loginPass,role:document.getElementById('teamAccessRole').value,permissions:selectedPermissions()})});
+      }
+      e.target.reset();document.getElementById('teamAccessRole').value='attendant';applyRolePreset();showToast(loginEmail?'Membro e login criados':'Membro adicionado');loadTeam();
+    }catch(err){showToast(err.message||'Erro ao adicionar')}
+  }
 
   async function loadInventory(){try{const r=await window.at360Api('/api/inventory');inventory=r.items||[];renderInventory()}catch(e){showToast('Não foi possível carregar estoque')}}
   function renderInventory(){
     const active=inventory.filter(x=>x.active),low=active.filter(x=>x.quantity<=x.minQuantity);
     document.getElementById('stockTotal').textContent=active.length;document.getElementById('stockLow').textContent=low.length;document.getElementById('stockCost').textContent=money(active.reduce((s,x)=>s+x.quantity*x.costPrice,0));document.getElementById('stockSale').textContent=money(active.reduce((s,x)=>s+x.quantity*x.salePrice,0));
-    const b=document.getElementById('stockList');b.innerHTML=inventory.length?inventory.map(x=>'<div class="stock-card '+(x.active&&x.quantity<=x.minQuantity?'stock-low':'')+'"><div class="stock-top"><div><b>'+esc(x.name)+'</b><small>'+esc(x.category||'Sem categoria')+(x.sku?' • '+esc(x.sku):'')+'</small>'+(x.active&&x.quantity<=x.minQuantity?'<span class="stock-badge">⚠ Repor estoque</span>':'')+'</div><div class="stock-qty">'+x.quantity+'<span>'+esc(x.unit)+' • mínimo '+x.minQuantity+'</span></div></div><div class="stock-actions"><button class="mg-off" data-stock-delta="'+esc(x.id)+'|-1">− 1</button><button class="mg-on" data-stock-delta="'+esc(x.id)+'|1">＋ 1</button><button class="'+(x.active?'mg-off':'mg-on')+'" data-stock-toggle="'+esc(x.id)+'">'+(x.active?'Desativar':'Ativar')+'</button></div></div>').join(''):'<div class="mg-empty">Nenhum item cadastrado.</div>';
+    const catalog=(config?.delivery?.catalog||[]).filter(x=>x.kind!=='addon');
+    const select=document.getElementById('stockCatalogLink');if(select){const current=select.value;select.innerHTML='<option value="">Sem baixa automática</option>'+catalog.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');select.value=current}
+    const names=new Map(catalog.map(x=>[String(x.id),x.name]));
+    const b=document.getElementById('stockList');b.innerHTML=inventory.length?inventory.map(x=>'<div class="stock-card '+(x.active&&x.quantity<=x.minQuantity?'stock-low':'')+'"><div class="stock-top"><div><b>'+esc(x.name)+'</b><small>'+esc(x.category||'Sem categoria')+(x.sku?' • '+esc(x.sku):'')+(x.catalogItemId?' • baixa: '+esc(names.get(String(x.catalogItemId))||'produto vinculado'):'')+'</small>'+(x.active&&x.quantity<=x.minQuantity?'<span class="stock-badge">⚠ Repor estoque</span>':'')+'</div><div class="stock-qty">'+x.quantity+'<span>'+esc(x.unit)+' • mínimo '+x.minQuantity+'</span></div></div><div class="stock-actions"><button class="mg-off" data-stock-delta="'+esc(x.id)+'|-1">− 1</button><button class="mg-on" data-stock-delta="'+esc(x.id)+'|1">＋ 1</button><button class="'+(x.active?'mg-off':'mg-on')+'" data-stock-toggle="'+esc(x.id)+'">'+(x.active?'Desativar':'Ativar')+'</button></div></div>').join(''):'<div class="mg-empty">Nenhum item cadastrado.</div>';
     b.querySelectorAll('[data-stock-delta]').forEach(btn=>btn.onclick=async()=>{const [id,d]=btn.dataset.stockDelta.split('|'),x=inventory.find(y=>y.id===id);await window.at360Api('/api/inventory/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({quantity:Math.max(0,x.quantity+Number(d))})});loadInventory()});
     b.querySelectorAll('[data-stock-toggle]').forEach(btn=>btn.onclick=async()=>{const x=inventory.find(y=>y.id===btn.dataset.stockToggle);await window.at360Api('/api/inventory/'+encodeURIComponent(x.id),{method:'PATCH',body:JSON.stringify({active:!x.active})});loadInventory()});
   }
-  async function addInventory(e){e.preventDefault();try{await window.at360Api('/api/inventory',{method:'POST',body:JSON.stringify({name:document.getElementById('stockName').value.trim(),sku:document.getElementById('stockSku').value.trim(),category:document.getElementById('stockCategory').value.trim(),quantity:Number(document.getElementById('stockQty').value||0),minQuantity:Number(document.getElementById('stockMin').value||0),unit:document.getElementById('stockUnit').value.trim()||'un',costPrice:Number(document.getElementById('stockCostPrice').value||0),salePrice:Number(document.getElementById('stockSalePrice').value||0)})});e.target.reset();document.getElementById('stockUnit').value='un';showToast('Item cadastrado');loadInventory()}catch(err){showToast(err.message||'Erro ao cadastrar item')}}
+  async function addInventory(e){e.preventDefault();try{await window.at360Api('/api/inventory',{method:'POST',body:JSON.stringify({name:document.getElementById('stockName').value.trim(),sku:document.getElementById('stockSku').value.trim(),category:document.getElementById('stockCategory').value.trim(),quantity:Number(document.getElementById('stockQty').value||0),minQuantity:Number(document.getElementById('stockMin').value||0),unit:document.getElementById('stockUnit').value.trim()||'un',costPrice:Number(document.getElementById('stockCostPrice').value||0),salePrice:Number(document.getElementById('stockSalePrice').value||0),catalogItemId:document.getElementById('stockCatalogLink').value})});e.target.reset();document.getElementById('stockUnit').value='un';showToast('Item cadastrado');loadInventory()}catch(err){showToast(err.message||'Erro ao cadastrar item')}}
 
   function loadView(name){if(name==='customers')loadCustomers();if(name==='finance')loadFinance();if(name==='team')loadTeam();if(name==='inventory')loadInventory()}
   function bind(){
     document.getElementById('customersRefresh').onclick=loadCustomers;document.getElementById('customerSearch').oninput=renderCustomers;
-    document.getElementById('financeRefresh').onclick=loadFinance;document.getElementById('financeForm').onsubmit=addFinance;document.getElementById('savePixSettings').onclick=savePixSettings;document.getElementById('generatePix').onclick=generatePix;document.getElementById('copyPix').onclick=copyPix;
+    document.getElementById('financeRefresh').onclick=loadFinance;document.getElementById('financeForm').onsubmit=addFinance;document.getElementById('savePixSettings').onclick=savePixSettings;document.getElementById('generatePix').onclick=generatePix;document.getElementById('copyPix').onclick=copyPix;document.getElementById('connectWoovi').onclick=connectWoovi;
     document.querySelectorAll('[data-fin-filter]').forEach(b=>b.onclick=()=>{finFilter=b.dataset.finFilter;document.querySelectorAll('[data-fin-filter]').forEach(x=>x.classList.toggle('active',x===b));renderFinance()});
-    document.getElementById('teamRefresh').onclick=loadTeam;document.getElementById('teamForm').onsubmit=addTeam;
+    document.getElementById('teamRefresh').onclick=loadTeam;document.getElementById('teamForm').onsubmit=addTeam;document.getElementById('teamAccessRole').onchange=applyRolePreset;
     document.getElementById('inventoryRefresh').onclick=loadInventory;document.getElementById('stockForm').onsubmit=addInventory;
   }
 
@@ -167,5 +217,5 @@
   if(typeof viewMeta!=='undefined'){viewMeta.customers=['Clientes 360','Histórico e relacionamento com cada cliente'];viewMeta.finance=['Financeiro 360','Caixa, recebimentos, despesas e PIX'];viewMeta.team=['Equipe 360','Pessoas e funções da operação'];viewMeta.inventory=['Estoque 360','Produtos, insumos e alertas de reposição']}
   bind();
   const oldUpdate=typeof updateUI==='function'?updateUI:null;if(oldUpdate)updateUI=function(){oldUpdate();applyVertical()};
-  setTimeout(()=>{applyVertical();loadCustomers()},900);
+  setTimeout(()=>{applyVertical();if(window.at360ApplyPermissions)window.at360ApplyPermissions();loadCustomers();applyRolePreset()},900);
 })();
