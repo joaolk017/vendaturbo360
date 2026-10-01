@@ -314,7 +314,7 @@
   const oldUpdate=typeof updateUI==='function'?updateUI:null;
   if(oldUpdate){updateUI=function(){oldUpdate();premiumRefresh();};}
   document.getElementById('simForm')?.addEventListener('submit',async e=>{
-    e.preventDefault();const input=document.getElementById('simInput'),msg=input.value.trim();if(!msg)return;input.value='';simAdd(msg,'user');simHistory.push({role:'user',content:msg});
-    const result=await simulate(msg);updateSimEngine(result);simAdd(result.reply||'Não consegui responder.','bot',simEngineLabel(result));simHistory.push({role:'bot',content:result.reply||''});radar(result);
+    e.preventDefault();const input=document.getElementById('simInput'),msg=input.value.trim();if(!msg)return;input.value='';simAdd(msg,'user');
+    const result=await simulate(msg);simHistory.push({role:'user',content:msg});updateSimEngine(result);simAdd(result.reply||'Não consegui responder.','bot',simEngineLabel(result));simHistory.push({role:'bot',content:result.reply||''});radar(result);
   });
 })();
