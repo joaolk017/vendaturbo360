@@ -3,53 +3,259 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#09111f">
+<meta name="theme-color" content="#08111f">
 <title>AtendeBot 360 | Central Operacional Inteligente</title>
-<meta name="description" content="Atendimento, pedidos, agenda, clientes, equipe, financeiro e estoque em uma única central operacional.">
+<meta name="description" content="Atendimento, pedidos, agenda, clientes, equipe, financeiro, PIX e estoque conectados em uma central operacional inteligente.">
 <style>
-:root{--ink:#101828;--muted:#667085;--line:#e7eaf0;--brand:#4f46e5;--brand2:#7c3aed;--green:#12b76a}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f8fc}a{text-decoration:none;color:inherit}button{font:inherit}
-.wrap{width:min(1180px,calc(100% - 36px));margin:auto}.top{position:sticky;top:0;z-index:20;background:rgba(248,250,252,.84);backdrop-filter:blur(18px);border-bottom:1px solid rgba(231,234,240,.85)}.top-in{height:72px;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:11px;font-weight:900}.mark{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#6366f1,#7c3aed);box-shadow:0 10px 25px rgba(99,102,241,.28)}.brand span{display:block;font-size:9px;color:#98a2b3;font-weight:700;margin-top:2px}.nav{display:flex;gap:22px;font-size:11px;color:#475467;font-weight:800}.top-cta,.btn{border:0;border-radius:11px;padding:11px 15px;font-weight:900;font-size:10px;display:inline-flex;align-items:center;justify-content:center;gap:7px}.top-cta,.btn.primary{color:#fff;background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 8px 22px rgba(79,70,229,.22)}.btn.secondary{background:#fff;border:1px solid var(--line);color:#344054}
-.hero{overflow:hidden;color:#fff;background:radial-gradient(circle at 82% 10%,rgba(129,140,248,.4),transparent 26%),radial-gradient(circle at 56% 110%,rgba(124,58,237,.33),transparent 36%),linear-gradient(135deg,#08111f,#172033 58%,#2e2869);padding:82px 0 72px}.hero-grid{display:grid;grid-template-columns:1.04fr .96fr;gap:48px;align-items:center}.kicker{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.065);padding:7px 10px;border-radius:999px;color:#c7d2fe;font-size:8.5px;font-weight:900;letter-spacing:.12em}.kicker i{width:6px;height:6px;border-radius:50%;background:#22c55e}.hero h1{font-size:57px;line-height:.98;letter-spacing:-.065em;margin:18px 0 18px;max-width:690px}.hero p{font-size:14px;line-height:1.7;color:#bdc7d8;max-width:650px}.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:25px}.hero .secondary{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12);color:#fff}.trust{display:flex;gap:20px;flex-wrap:wrap;margin-top:28px;color:#98a2b3;font-size:9px;font-weight:800}.trust b{color:#d0d5dd}
-.mock{position:relative;background:rgba(255,255,255,.075);border:1px solid rgba(255,255,255,.1);border-radius:25px;padding:13px;box-shadow:0 35px 80px rgba(0,0,0,.25);backdrop-filter:blur(12px)}.window{background:#f7f8fc;border-radius:17px;overflow:hidden;color:#101828}.window-top{height:44px;display:flex;align-items:center;gap:6px;padding:0 14px;background:#fff;border-bottom:1px solid #eaecf0}.window-top i{width:7px;height:7px;border-radius:50%;background:#d0d5dd}.dashboard{display:grid;grid-template-columns:118px 1fr;min-height:390px}.side{padding:14px 9px;background:#0b1322;color:#98a2b3}.side b{color:#fff;font-size:9px}.side div{margin-top:13px;padding:7px;border-radius:7px;font-size:7px}.side .active{background:rgba(99,102,241,.23);color:#fff}.dash{padding:16px}.dash h3{margin:0;font-size:14px}.dash>p{margin:3px 0 13px;color:#98a2b3;font-size:7px}.mini-hero{border-radius:13px;color:#fff;padding:14px;background:linear-gradient(135deg,#101828,#312e81)}.mini-hero b{font-size:14px;display:block;max-width:300px}.mini-hero span{font-size:7px;color:#cbd5e1}.mini-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:9px}.mini-kpi{border:1px solid #eaecf0;background:#fff;border-radius:9px;padding:9px}.mini-kpi small{font-size:5px;color:#98a2b3;display:block}.mini-kpi b{font-size:12px;margin-top:3px;display:block}.mini-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:8px;margin-top:8px}.mini-card{min-height:100px;border:1px solid #eaecf0;background:#fff;border-radius:10px;padding:9px}.mini-card strong{font-size:7px}.rows{display:grid;gap:5px;margin-top:7px}.row{height:13px;border-radius:5px;background:#f2f4f7}
-.section{padding:82px 0}.section.white{background:#fff}.section-head{text-align:center;max-width:720px;margin:0 auto 38px}.eyebrow{font-size:9px;font-weight:900;letter-spacing:.13em;color:#4f46e5}.section h2{font-size:38px;letter-spacing:-.052em;margin:10px 0 10px}.section-head p{font-size:12px;line-height:1.65;color:#667085;margin:0}.modules{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.module{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 8px 28px rgba(16,24,40,.035);transition:.16s}.module:hover{transform:translateY(-2px);box-shadow:0 16px 35px rgba(16,24,40,.07)}.module i{font-style:normal;width:38px;height:38px;border-radius:12px;background:#eef2ff;color:#4338ca;display:grid;place-items:center;font-weight:900}.module h3{font-size:13px;margin:14px 0 6px}.module p{font-size:9.5px;line-height:1.55;color:#667085;margin:0}
-.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:center}.step{position:relative;padding:17px;border:1px solid var(--line);border-radius:17px;background:#fff;min-height:132px}.step:not(:last-child):after{content:"→";position:absolute;right:-18px;top:49px;width:34px;height:34px;border-radius:50%;background:#eef2ff;color:#4338ca;display:grid;place-items:center;font-weight:900;z-index:2}.step span{font-size:8px;color:#4f46e5;font-weight:900}.step b{display:block;font-size:11px;margin-top:8px}.step p{font-size:8.5px;color:#667085;line-height:1.5}
-.segments{display:grid;grid-template-columns:repeat(5,1fr);gap:11px}.segment{padding:16px;border-radius:16px;background:#f8fafc;border:1px solid #eaecf0;text-align:center}.segment i{font-style:normal;font-size:25px}.segment b{display:block;font-size:10px;margin-top:8px}.segment span{font-size:7.5px;color:#98a2b3}
-.cta-section{padding:84px 0;background:#0b1220;color:#fff}.cta-box{display:grid;grid-template-columns:1fr auto;gap:30px;align-items:center}.cta-box h2{font-size:40px;margin:0 0 10px;letter-spacing:-.055em}.cta-box p{color:#98a2b3;font-size:12px;margin:0}.footer{padding:26px 0;background:#080e19;color:#667085;font-size:9px}.footer-in{display:flex;justify-content:space-between;gap:20px}.footer b{color:#d0d5dd}
-@media(max-width:950px){.hero-grid{grid-template-columns:1fr}.hero h1{font-size:48px}.mock{max-width:680px}.modules{grid-template-columns:1fr 1fr}.flow{grid-template-columns:1fr 1fr;gap:10px}.step:not(:last-child):after{display:none}.segments{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:650px){.wrap{width:min(100% - 24px,1180px)}.nav{display:none}.top-in{height:62px}.hero{padding:55px 0 48px}.hero h1{font-size:39px}.hero p{font-size:12px}.hero-actions{display:grid}.hero-actions .btn{width:100%}.dashboard{grid-template-columns:85px 1fr;min-height:320px}.side{padding:10px 6px}.side div{font-size:6px}.dash{padding:10px}.mini-kpis{grid-template-columns:1fr 1fr}.modules{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.segments{grid-template-columns:1fr 1fr}.section{padding:58px 0}.section h2{font-size:31px}.cta-box{grid-template-columns:1fr}.cta-box h2{font-size:32px}.cta-box .btn{width:100%}.footer-in{display:grid}}
+:root{
+  --ink:#101828;--muted:#667085;--soft:#f7f8fc;--line:#e7eaf0;--brand:#4f46e5;--brand2:#7c3aed;
+  --green:#12b76a;--navy:#08111f;--navy2:#152238;--purple:#312e81;--shadow:0 18px 55px rgba(16,24,40,.08)
+}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--soft);letter-spacing:-.006em}a{text-decoration:none;color:inherit}button{font:inherit}.wrap{width:min(1200px,calc(100% - 40px));margin:auto}
+.top{position:sticky;top:0;z-index:50;background:rgba(248,250,252,.84);backdrop-filter:blur(20px) saturate(1.2);border-bottom:1px solid rgba(231,234,240,.88)}.top-in{height:72px;display:flex;align-items:center;justify-content:space-between;gap:22px}.brand{display:flex;align-items:center;gap:11px;font-weight:900}.mark{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#6366f1,#7c3aed);box-shadow:0 10px 28px rgba(99,102,241,.30)}.brand-name{font-size:13px}.brand-name small{display:block;font-size:8px;color:#98a2b3;font-weight:800;letter-spacing:.08em;margin-top:2px}.nav{display:flex;gap:22px;font-size:10.5px;color:#475467;font-weight:800}.nav a:hover{color:#4f46e5}.top-actions{display:flex;gap:8px}.btn{border:0;border-radius:11px;padding:11px 15px;font-weight:900;font-size:10px;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.16s}.btn:hover{transform:translateY(-1px)}.btn.primary{color:#fff;background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 9px 24px rgba(79,70,229,.22)}.btn.secondary{background:#fff;border:1px solid var(--line);color:#344054;box-shadow:0 1px 2px rgba(16,24,40,.04)}.btn.dark{background:#111827;color:#fff}.btn.ghost{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07);color:#fff}
+.hero{position:relative;overflow:hidden;color:#fff;background:radial-gradient(circle at 84% 8%,rgba(129,140,248,.42),transparent 25%),radial-gradient(circle at 56% 112%,rgba(124,58,237,.34),transparent 35%),linear-gradient(135deg,#07101e,#172033 58%,#30286c);padding:92px 0 82px}.hero:after{content:"";position:absolute;width:620px;height:620px;border-radius:50%;right:-360px;top:-370px;border:1px solid rgba(255,255,255,.07);box-shadow:0 0 0 75px rgba(255,255,255,.017),0 0 0 150px rgba(255,255,255,.011)}.hero-grid{position:relative;z-index:2;display:grid;grid-template-columns:1.02fr .98fr;gap:50px;align-items:center}.kicker{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.065);padding:7px 10px;border-radius:999px;color:#c7d2fe;font-size:8.5px;font-weight:900;letter-spacing:.12em}.kicker i{width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.1)}.hero h1{font-size:58px;line-height:.98;letter-spacing:-.066em;margin:18px 0 18px;max-width:720px}.hero p{font-size:14px;line-height:1.72;color:#bdc7d8;max-width:660px}.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}.trust{display:flex;gap:21px;flex-wrap:wrap;margin-top:28px;color:#98a2b3;font-size:9px;font-weight:800}.trust b{color:#d0d5dd}.value-line{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:28px}.value-line div{padding:11px;border-radius:13px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.075)}.value-line b{font-size:10px;display:block}.value-line span{font-size:7.5px;color:#98a2b3;display:block;margin-top:3px;line-height:1.4}
+.mock{position:relative;background:rgba(255,255,255,.075);border:1px solid rgba(255,255,255,.1);border-radius:26px;padding:13px;box-shadow:0 38px 90px rgba(0,0,0,.28);backdrop-filter:blur(12px)}.mock-tag{position:absolute;right:18px;top:-16px;padding:7px 9px;border-radius:999px;background:#fff;color:#344054;font-size:7px;font-weight:900;box-shadow:0 8px 24px rgba(15,23,42,.16)}.window{background:#f7f8fc;border-radius:18px;overflow:hidden;color:#101828}.window-top{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:#fff;border-bottom:1px solid #eaecf0}.dots{display:flex;gap:6px}.dots i{width:7px;height:7px;border-radius:50%;background:#d0d5dd}.window-top span{font-size:6px;color:#98a2b3;font-weight:800}.dashboard{display:grid;grid-template-columns:120px 1fr;min-height:410px}.side{padding:14px 9px;background:#0b1322;color:#98a2b3}.side b{color:#fff;font-size:8px}.side div{margin-top:11px;padding:7px;border-radius:7px;font-size:6.6px}.side .active{background:rgba(99,102,241,.23);color:#fff}.dash{padding:16px}.dash h3{margin:0;font-size:13px}.dash>p{margin:3px 0 12px;color:#98a2b3;font-size:6.5px}.mini-hero{border-radius:13px;color:#fff;padding:14px;background:linear-gradient(135deg,#101828,#312e81)}.mini-hero b{font-size:13px;display:block;max-width:300px;margin-top:3px}.mini-hero span{font-size:6px;color:#cbd5e1}.mini-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:9px}.mini-kpi{border:1px solid #eaecf0;background:#fff;border-radius:9px;padding:9px}.mini-kpi small{font-size:5px;color:#98a2b3;display:block}.mini-kpi b{font-size:11px;margin-top:3px;display:block}.mini-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:8px;margin-top:8px}.mini-card{min-height:106px;border:1px solid #eaecf0;background:#fff;border-radius:10px;padding:9px}.mini-card strong{font-size:6.5px}.rows{display:grid;gap:5px;margin-top:7px}.row{height:13px;border-radius:5px;background:#f2f4f7}.row.hot{background:#eef2ff}.row.ok{background:#ecfdf3}
+.section{padding:86px 0}.section.white{background:#fff}.section.dark{background:#0b1220;color:#fff}.section-head{text-align:center;max-width:760px;margin:0 auto 40px}.eyebrow{font-size:8.5px;font-weight:900;letter-spacing:.14em;color:#4f46e5}.dark .eyebrow{color:#a5b4fc}.section h2{font-size:40px;letter-spacing:-.055em;margin:10px 0 11px;line-height:1.04}.section-head p{font-size:12px;line-height:1.7;color:#667085;margin:0}.dark .section-head p{color:#98a2b3}
+.definition{display:grid;grid-template-columns:.85fr 1.15fr;gap:18px}.definition-card,.stack-card{border:1px solid var(--line);background:#fff;border-radius:22px;padding:24px;box-shadow:var(--shadow)}.definition-card h3{font-size:26px;letter-spacing:-.045em;margin:8px 0 10px}.definition-card>p{font-size:11px;line-height:1.7;color:#667085}.statement{display:inline-flex;border-radius:999px;padding:7px 9px;background:#eef2ff;color:#4338ca;font-size:8px;font-weight:900;letter-spacing:.08em}.replace-list{display:grid;gap:8px;margin-top:18px}.replace{display:flex;align-items:center;gap:10px;padding:10px 11px;border:1px solid #eaecf0;border-radius:12px;background:#fafbfc}.replace i{font-style:normal;width:27px;height:27px;border-radius:8px;display:grid;place-items:center;background:#eef2ff;color:#4338ca;font-size:10px}.replace b{font-size:9.5px}.replace span{display:block;font-size:7.8px;color:#98a2b3;margin-top:2px}.stack-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}.stack-title h3{font-size:15px;margin:0}.stack-title span{font-size:7px;color:#027a48;background:#ecfdf3;padding:5px 7px;border-radius:999px;font-weight:900}.stack{display:grid;gap:8px}.stack-row{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;border:1px solid #eaecf0;border-radius:13px;padding:11px}.stack-icon{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:#eef2ff;color:#4338ca;font-weight:900}.stack-row b{font-size:10px}.stack-row p{font-size:8px;color:#667085;margin:3px 0 0;line-height:1.4}.stack-row em{font-style:normal;font-size:7px;font-weight:900;color:#475467;background:#f2f4f7;padding:5px 7px;border-radius:999px}
+.module-groups{display:grid;gap:18px}.group{border:1px solid var(--line);border-radius:24px;background:#fff;padding:22px;box-shadow:0 10px 35px rgba(16,24,40,.035)}.group-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px}.group-head h3{margin:0;font-size:17px}.group-head p{margin:4px 0 0;color:#667085;font-size:9px}.group-tag{font-size:7px;font-weight:900;padding:6px 8px;border-radius:999px;background:#eef2ff;color:#4338ca}.modules{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.module{background:#fbfcfd;border:1px solid var(--line);border-radius:17px;padding:16px;transition:.16s}.module:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(16,24,40,.07);background:#fff}.module i{font-style:normal;width:36px;height:36px;border-radius:11px;background:#eef2ff;color:#4338ca;display:grid;place-items:center;font-weight:900}.module h4{font-size:11px;margin:12px 0 5px}.module p{font-size:8.5px;line-height:1.55;color:#667085;margin:0}.module small{display:block;margin-top:9px;font-size:7px;color:#98a2b3}
+.flow-switch{display:grid;grid-template-columns:1fr 1fr;gap:16px}.journey{border:1px solid var(--line);border-radius:22px;background:#fff;padding:22px;box-shadow:var(--shadow)}.journey-top{display:flex;justify-content:space-between;gap:12px;align-items:start;margin-bottom:17px}.journey-top i{font-style:normal;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:#eef2ff;font-size:18px}.journey h3{font-size:17px;margin:0}.journey-top p{font-size:8.5px;color:#667085;margin:4px 0 0}.journey-list{display:grid;gap:0}.journey-step{position:relative;display:grid;grid-template-columns:26px 1fr;gap:10px;padding:0 0 16px}.journey-step:last-child{padding-bottom:0}.journey-step:not(:last-child):after{content:"";position:absolute;left:12px;top:25px;bottom:0;width:1px;background:#d0d5dd}.journey-step span{position:relative;z-index:1;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#eef2ff;color:#4338ca;font-size:7px;font-weight:900}.journey-step b{font-size:9.5px;display:block;margin-top:2px}.journey-step p{font-size:8px;color:#667085;line-height:1.45;margin:3px 0 0}.journey-foot{margin-top:17px;padding:11px;border-radius:12px;background:#f8fafc;border:1px solid #eaecf0;font-size:8px;color:#475467;line-height:1.55}.journey-foot b{color:#101828}
+.sync{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;align-items:stretch}.sync-board{border-radius:24px;padding:24px;background:radial-gradient(circle at 92% 10%,rgba(99,102,241,.28),transparent 30%),linear-gradient(145deg,#101828,#1d2939);color:#fff;box-shadow:0 25px 70px rgba(15,23,42,.18)}.sync-board h3{font-size:25px;letter-spacing:-.045em;margin:0 0 7px}.sync-board>p{font-size:10px;color:#aeb8ca;line-height:1.6}.sync-map{display:grid;grid-template-columns:1fr 70px 1fr;gap:10px;align-items:center;margin-top:22px}.sync-col{display:grid;gap:8px}.sync-item{padding:11px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08)}.sync-item b{font-size:9px;display:block}.sync-item span{font-size:7px;color:#98a2b3;display:block;margin-top:2px}.sync-core{width:70px;height:70px;border-radius:22px;display:grid;place-items:center;text-align:center;background:linear-gradient(135deg,#6366f1,#7c3aed);font-size:8px;font-weight:900;box-shadow:0 14px 30px rgba(99,102,241,.30)}.sync-side{display:grid;gap:10px}.sync-card{border:1px solid var(--line);border-radius:18px;background:#fff;padding:17px}.sync-card h4{font-size:12px;margin:0 0 6px}.sync-card p{font-size:8.5px;color:#667085;line-height:1.55;margin:0}.sync-card .pill{display:inline-flex;margin-top:10px;font-size:7px;font-weight:900;padding:5px 7px;border-radius:999px;background:#ecfdf3;color:#027a48}
+.channels{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.channel{border:1px solid var(--line);border-radius:18px;background:#fff;padding:18px}.channel i{font-style:normal;font-size:24px}.channel h4{font-size:11px;margin:11px 0 5px}.channel p{font-size:8.5px;line-height:1.55;color:#667085;margin:0}
+.segments{display:grid;grid-template-columns:repeat(5,1fr);gap:11px}.segment{padding:16px;border-radius:16px;background:#fff;border:1px solid var(--line);text-align:center}.segment i{font-style:normal;font-size:25px}.segment b{display:block;font-size:10px;margin-top:8px}.segment span{font-size:7.5px;color:#98a2b3}.segment small{display:block;font-size:6.8px;color:#667085;margin-top:5px;line-height:1.4}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px}.compare-card{border-radius:22px;padding:22px}.compare-card.before{background:#f8fafc;border:1px solid #eaecf0}.compare-card.after{background:linear-gradient(145deg,#101828,#1d2939);color:#fff;box-shadow:0 22px 60px rgba(15,23,42,.16)}.compare-card h3{font-size:18px;margin:0 0 14px}.compare-list{display:grid;gap:9px}.compare-row{display:flex;gap:9px;align-items:flex-start;font-size:9px;line-height:1.5}.compare-row i{font-style:normal;width:22px;height:22px;border-radius:7px;display:grid;place-items:center;flex:0 0 auto;background:#fff1f3;color:#c01048;font-size:8px}.after .compare-row i{background:rgba(18,183,106,.14);color:#6ce9a6}.after .compare-row{color:#cbd5e1}.after .compare-row b{color:#fff}
+.tech{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}.tech-card{padding:16px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.045)}.tech-card b{font-size:10px;display:block}.tech-card span{font-size:7.5px;color:#98a2b3;display:block;margin-top:5px;line-height:1.5}.tech-card i{font-style:normal;display:inline-flex;margin-bottom:10px;width:31px;height:31px;border-radius:10px;align-items:center;justify-content:center;background:rgba(99,102,241,.22);color:#c7d2fe}
+.note{max-width:820px;margin:24px auto 0;padding:12px 14px;border-radius:13px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:8px;line-height:1.6;color:#98a2b3;text-align:center}.note b{color:#d0d5dd}
+.cta-section{padding:88px 0;background:radial-gradient(circle at 75% 0%,rgba(99,102,241,.25),transparent 25%),#08111f;color:#fff}.cta-box{display:grid;grid-template-columns:1fr auto;gap:30px;align-items:center}.cta-box h2{font-size:42px;margin:0 0 10px;letter-spacing:-.058em;line-height:1.02}.cta-box p{color:#98a2b3;font-size:11px;line-height:1.6;margin:0;max-width:680px}.cta-actions{display:flex;gap:8px}.footer{padding:28px 0;background:#060b14;color:#667085;font-size:8.5px}.footer-in{display:flex;justify-content:space-between;gap:20px}.footer b{color:#d0d5dd}
+@media(max-width:1000px){.hero-grid,.definition,.sync{grid-template-columns:1fr}.hero h1{font-size:50px}.mock{max-width:700px}.modules{grid-template-columns:1fr 1fr}.segments{grid-template-columns:repeat(3,1fr)}.tech{grid-template-columns:1fr 1fr}.flow-switch{grid-template-columns:1fr}.channels{grid-template-columns:1fr 1fr}}
+@media(max-width:720px){.wrap{width:min(100% - 24px,1200px)}.nav{display:none}.top-in{height:64px}.top-actions .secondary{display:none}.hero{padding:60px 0 52px}.hero h1{font-size:40px}.hero p{font-size:12px}.hero-actions{display:grid}.hero-actions .btn{width:100%}.value-line{grid-template-columns:1fr}.dashboard{grid-template-columns:85px 1fr;min-height:330px}.side{padding:10px 6px}.side div{font-size:5.8px;margin-top:8px}.dash{padding:10px}.mini-kpis{grid-template-columns:1fr 1fr}.section{padding:62px 0}.section h2{font-size:32px}.modules{grid-template-columns:1fr}.group{padding:15px}.group-head{align-items:flex-start}.segments{grid-template-columns:1fr 1fr}.channels,.tech,.compare{grid-template-columns:1fr}.sync-map{grid-template-columns:1fr}.sync-core{margin:auto}.cta-box{grid-template-columns:1fr}.cta-actions{display:grid}.cta-actions .btn{width:100%}.footer-in{display:grid}.definition-card,.stack-card,.journey,.sync-board{padding:18px}}
+@media(max-width:430px){.brand-name small{display:none}.top-actions .btn{padding:10px 12px}.hero h1{font-size:36px}.segments{grid-template-columns:1fr 1fr}.mock{padding:8px}.window-top{height:36px}.dashboard{grid-template-columns:75px 1fr}.mini-grid{grid-template-columns:1fr}.trust{gap:10px}.section-head{margin-bottom:28px}}
 </style>
 </head>
 <body>
-<header class="top"><div class="wrap top-in"><a class="brand" href="/"><span class="mark">A</span><span>AtendeBot 360<small>Business Operating System</small></span></a><nav class="nav"><a href="#modulos">Módulos</a><a href="#fluxo">Como funciona</a><a href="#segmentos">Segmentos</a></nav><a class="top-cta" href="/">Abrir demonstração</a></div></header>
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="/apresentacao.html"><span class="mark">A</span><span class="brand-name">AtendeBot 360<small>BUSINESS OPERATING SYSTEM</small></span></a>
+    <nav class="nav"><a href="#plataforma">Plataforma</a><a href="#modulos">Módulos</a><a href="#fluxos">Fluxos</a><a href="#segmentos">Segmentos</a><a href="#estrutura">Estrutura</a></nav>
+    <div class="top-actions"><a class="btn secondary" href="#modulos">Conhecer</a><a class="btn primary" href="/">Abrir demonstração</a></div>
+  </div>
+</header>
+
 <main>
-<section class="hero"><div class="wrap hero-grid"><div><div class="kicker"><i></i> CENTRAL OPERACIONAL INTELIGENTE</div><h1>Seu negócio operando com padrão de empresa grande.</h1><p>Atendimento, pedidos, agenda, clientes, equipe, financeiro e estoque conectados em uma única central. O AtendeBot 360 organiza a jornada do cliente e a rotina operacional do estabelecimento.</p><div class="hero-actions"><a class="btn primary" href="/">Explorar o painel →</a><a class="btn secondary" href="#modulos">Conhecer os módulos</a></div><div class="trust"><span><b>✓ Multi-segmento</b> e modular</span><span><b>✓ PIX</b> integrado ao fluxo</span><span><b>✓ Equipe</b> com permissões</span></div></div><div class="mock"><div class="window"><div class="window-top"><i></i><i></i><i></i></div><div class="dashboard"><aside class="side"><b>AtendeBot 360</b><div class="active">⚡ Central 360</div><div>◈ Assistente</div><div>◎ Clientes</div><div>▤ Pedidos</div><div>◷ Agenda</div><div>R$ Financeiro</div><div>▣ Estoque</div></aside><div class="dash"><h3>Central de comando</h3><p>Operação, atendimento e crescimento</p><div class="mini-hero"><span>OPERAÇÃO CONECTADA</span><b>O que precisa da sua atenção agora.</b></div><div class="mini-kpis"><div class="mini-kpi"><small>PEDIDOS</small><b>12</b></div><div class="mini-kpi"><small>AGENDA</small><b>8</b></div><div class="mini-kpi"><small>PIX</small><b>5</b></div><div class="mini-kpi"><small>LEADS</small><b>19</b></div></div><div class="mini-grid"><div class="mini-card"><strong>Fila operacional</strong><div class="rows"><div class="row"></div><div class="row"></div><div class="row"></div><div class="row"></div></div></div><div class="mini-card"><strong>Ações rápidas</strong><div class="rows"><div class="row"></div><div class="row"></div><div class="row"></div></div></div></div></div></div></div></div></div></section>
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="kicker"><i></i> CENTRAL OPERACIONAL INTELIGENTE</div>
+      <h1>Mais do que um chatbot. Uma operação inteira conectada.</h1>
+      <p>O AtendeBot 360 reúne atendimento, pedidos, agenda, clientes, equipe, financeiro, PIX, estoque e automações em uma única plataforma. O cliente resolve o que precisa e o estabelecimento acompanha a operação do começo ao fim.</p>
+      <div class="hero-actions"><a class="btn primary" href="/">Explorar o painel completo →</a><a class="btn ghost" href="#plataforma">Entender a plataforma</a></div>
+      <div class="trust"><span><b>✓ Multi-segmento</b> e modular</span><span><b>✓ Multiusuário</b> com permissões</span><span><b>✓ Fluxos conectados</b> ao financeiro e estoque</span></div>
+      <div class="value-line"><div><b>Atender</b><span>Assistente, leads e canais digitais</span></div><div><b>Operar</b><span>Pedidos, agenda, tarefas e notificações</span></div><div><b>Gerir</b><span>Clientes, equipe, caixa, PIX e estoque</span></div></div>
+    </div>
+    <div class="mock">
+      <div class="mock-tag">DEMONSTRAÇÃO DA CENTRAL</div>
+      <div class="window">
+        <div class="window-top"><div class="dots"><i></i><i></i><i></i></div><span>ATENDEBOT 360 • CENTRAL DE COMANDO</span></div>
+        <div class="dashboard">
+          <aside class="side"><b>AtendeBot 360</b><div class="active">⚡ Central 360</div><div>◈ Assistente 360</div><div>◎ Clientes 360</div><div>▤ Pedidos</div><div>◷ Agenda 360</div><div>R$ Financeiro 360</div><div>♟ Equipe 360</div><div>▣ Estoque 360</div></aside>
+          <div class="dash"><h3>Central de comando</h3><p>Operação, atendimento e crescimento em tempo real</p><div class="mini-hero"><span>OPERAÇÃO CONECTADA</span><b>O que precisa da sua atenção agora.</b></div><div class="mini-kpis"><div class="mini-kpi"><small>LEADS</small><b>CRM</b></div><div class="mini-kpi"><small>PEDIDOS</small><b>Fila</b></div><div class="mini-kpi"><small>FINANCEIRO</small><b>PIX</b></div><div class="mini-kpi"><small>AGENDA</small><b>Hoje</b></div></div><div class="mini-grid"><div class="mini-card"><strong>Fila operacional</strong><div class="rows"><div class="row hot"></div><div class="row"></div><div class="row ok"></div><div class="row"></div></div></div><div class="mini-card"><strong>Ações rápidas</strong><div class="rows"><div class="row"></div><div class="row hot"></div><div class="row"></div></div></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-<section class="section white" id="modulos"><div class="wrap"><div class="section-head"><div class="eyebrow">UMA ÚNICA PLATAFORMA</div><h2>Do primeiro contato até a operação do dia.</h2><p>Os módulos trabalham juntos para que o estabelecimento não precise controlar atendimento, pedidos, agenda e gestão em ferramentas separadas.</p></div><div class="modules">
-<div class="module"><i>◈</i><h3>Assistente 360</h3><p>Atendimento inteligente, respostas do negócio, captação de interesse e encaminhamento.</p></div>
-<div class="module"><i>⚡</i><h3>Central Operacional</h3><p>Pedidos, agenda, pagamentos, leads, estoque e tarefas em uma fila única de atenção.</p></div>
-<div class="module"><i>◎</i><h3>Clientes 360</h3><p>Perfil, histórico de pedidos, agendamentos, contatos e relacionamento centralizado.</p></div>
-<div class="module"><i>▤</i><h3>Pedidos & Delivery</h3><p>Catálogo, entrega ou retirada, endereço, status e acompanhamento do pedido.</p></div>
-<div class="module"><i>◷</i><h3>Agenda 360</h3><p>Serviços, profissionais, horários livres, reservas online e notificações.</p></div>
-<div class="module"><i>R$</i><h3>Financeiro 360</h3><p>Receitas, despesas, caixa e pagamentos PIX vinculados à operação.</p></div>
-<div class="module"><i>♟</i><h3>Equipe 360</h3><p>Usuários individuais, funções e permissões para cada colaborador.</p></div>
-<div class="module"><i>▣</i><h3>Estoque 360</h3><p>Quantidades, alertas e baixa automática conforme pedidos e vendas.</p></div>
-</div></div></section>
+<section class="section white" id="plataforma">
+  <div class="wrap">
+    <div class="section-head"><div class="eyebrow">O QUE É O ATENDEBOT 360</div><h2>Uma central para atender, vender e operar.</h2><p>O valor não está em uma única tela. Está na conexão entre o que o cliente faz, o que a equipe precisa executar e o que a gestão precisa enxergar.</p></div>
+    <div class="definition">
+      <article class="definition-card">
+        <span class="statement">NÃO É APENAS UM CHATBOT</span>
+        <h3>Uma camada operacional para pequenos e médios negócios.</h3>
+        <p>O sistema transforma um atendimento digital em ações concretas: captar um lead, registrar um pedido, reservar um horário, gerar um PIX, avisar a equipe, atualizar o financeiro e movimentar o estoque.</p>
+        <div class="replace-list">
+          <div class="replace"><i>◈</i><div><b>Atendimento separado</b><span>Assistente e página pública no mesmo ecossistema</span></div></div>
+          <div class="replace"><i>▤</i><div><b>Pedido perdido no WhatsApp</b><span>Fila com status e acompanhamento operacional</span></div></div>
+          <div class="replace"><i>◷</i><div><b>Agenda manual</b><span>Horários livres, profissional e serviço organizados</span></div></div>
+          <div class="replace"><i>R$</i><div><b>Caixa desconectado</b><span>Pagamento e financeiro vinculados ao evento</span></div></div>
+        </div>
+      </article>
+      <article class="stack-card">
+        <div class="stack-title"><div><h3>Arquitetura operacional</h3></div><span>MÓDULOS CONECTADOS</span></div>
+        <div class="stack">
+          <div class="stack-row"><div class="stack-icon">01</div><div><b>Entrada do cliente</b><p>Link público, Instagram, WhatsApp, QR Code ou widget no site.</p></div><em>CANAIS</em></div>
+          <div class="stack-row"><div class="stack-icon">02</div><div><b>Experiência digital</b><p>Conversa, pedido, catálogo, agenda ou captação de interesse.</p></div><em>ATENDIMENTO</em></div>
+          <div class="stack-row"><div class="stack-icon">03</div><div><b>Automação operacional</b><p>Status, pagamento, notificações, tarefas e regras do negócio.</p></div><em>OPERAÇÃO</em></div>
+          <div class="stack-row"><div class="stack-icon">04</div><div><b>Gestão centralizada</b><p>Clientes, financeiro, equipe, estoque e histórico.</p></div><em>GESTÃO</em></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
 
-<section class="section" id="fluxo"><div class="wrap"><div class="section-head"><div class="eyebrow">FLUXO CONECTADO</div><h2>Uma jornada contínua, sem remendos.</h2><p>O cliente resolve o que precisa e a operação recebe cada etapa organizada dentro da central.</p></div><div class="flow">
-<div class="step"><span>01</span><b>Cliente entra</b><p>Abre o link, QR Code, Instagram, WhatsApp ou site do estabelecimento.</p></div>
-<div class="step"><span>02</span><b>Escolhe a ação</b><p>Conversa, faz pedido ou agenda um serviço sem depender de atendimento manual.</p></div>
-<div class="step"><span>03</span><b>Confirma dados</b><p>Entrega ou retirada, endereço, serviço, horário e informações necessárias.</p></div>
-<div class="step"><span>04</span><b>Pagamento</b><p>Quando habilitado, o PIX entra no próprio fluxo e pode ser confirmado automaticamente.</p></div>
-<div class="step"><span>05</span><b>Operação assume</b><p>Painel, financeiro, estoque e equipe recebem o evento para continuar o atendimento.</p></div>
-</div></div></section>
+<section class="section" id="modulos">
+  <div class="wrap">
+    <div class="section-head"><div class="eyebrow">ECOSSISTEMA 360</div><h2>Cada módulo resolve uma parte. Juntos, formam a operação.</h2><p>A plataforma pode adaptar os módulos ao segmento do estabelecimento, sem obrigar todos os negócios a usar o mesmo fluxo.</p></div>
+    <div class="module-groups">
+      <div class="group">
+        <div class="group-head"><div><h3>Atendimento & Inteligência</h3><p>Camada que conversa, captura intenção e ajuda a melhorar a operação.</p></div><span class="group-tag">EXPERIÊNCIA</span></div>
+        <div class="modules">
+          <article class="module"><i>◈</i><h4>Assistente 360</h4><p>Atendimento digital com informações do negócio, respostas e encaminhamentos.</p><small>Chat + contexto do estabelecimento</small></article>
+          <article class="module"><i>◎</i><h4>Leads & CRM</h4><p>Captura contatos, interesses e andamento comercial para não perder oportunidades.</p><small>Contato → interesse → acompanhamento</small></article>
+          <article class="module"><i>🧠</i><h4>Cérebro 360</h4><p>Base de conhecimento, regras, qualificação e configuração da inteligência do atendimento.</p><small>Conhecimento centralizado</small></article>
+          <article class="module"><i>↗</i><h4>Growth 360</h4><p>Visão de oportunidades, conversão e pontos onde o atendimento pode melhorar.</p><small>Leitura do funil</small></article>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-head"><div><h3>Operação & Vendas</h3><p>O que transforma intenção do cliente em trabalho organizado para a equipe.</p></div><span class="group-tag">EXECUÇÃO</span></div>
+        <div class="modules">
+          <article class="module"><i>⚡</i><h4>Central 360</h4><p>Fila única com pedidos, agenda, pagamentos, leads e tarefas que exigem atenção.</p><small>Prioridades em um só lugar</small></article>
+          <article class="module"><i>▤</i><h4>Pedidos & Delivery</h4><p>Catálogo, retirada ou entrega, endereço, observações e atualização de status.</p><small>Do pedido à conclusão</small></article>
+          <article class="module"><i>◷</i><h4>Agenda 360</h4><p>Serviços, profissionais, dias, horários disponíveis e reservas feitas pelo cliente.</p><small>Agenda por profissional</small></article>
+          <article class="module"><i>▦</i><h4>Catálogo / Cardápio</h4><p>Produtos, preços, categorias, adicionais e estruturas específicas por segmento.</p><small>Adaptável ao negócio</small></article>
+        </div>
+      </div>
+      <div class="group">
+        <div class="group-head"><div><h3>Gestão & Controle</h3><p>Camada que conecta a rotina operacional com os números e recursos do negócio.</p></div><span class="group-tag">GESTÃO</span></div>
+        <div class="modules">
+          <article class="module"><i>◎</i><h4>Clientes 360</h4><p>Histórico do cliente reunindo contatos, pedidos, agendamentos e relacionamento.</p><small>Visão completa por cliente</small></article>
+          <article class="module"><i>R$</i><h4>Financeiro 360</h4><p>Receitas, despesas e movimentações ligadas aos eventos da operação.</p><small>Operação ligada ao caixa</small></article>
+          <article class="module"><i>♟</i><h4>Equipe 360</h4><p>Login individual, funções e permissões para definir o que cada colaborador acessa.</p><small>Controle por usuário</small></article>
+          <article class="module"><i>▣</i><h4>Estoque 360</h4><p>Quantidades, alertas e baixa automática conforme pedido ou venda configurada.</p><small>Reposição e controle</small></article>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-<section class="section white" id="segmentos"><div class="wrap"><div class="section-head"><div class="eyebrow">MULTI-SEGMENTO</div><h2>Uma base. Experiências diferentes para cada negócio.</h2><p>O AtendeBot 360 adapta módulos e fluxos conforme o tipo de estabelecimento.</p></div><div class="segments">
-<div class="segment"><i>✂️</i><b>Barbearias</b><span>Agenda e clientes</span></div><div class="segment"><i>🍱</i><b>Marmitarias</b><span>Pedido e delivery</span></div><div class="segment"><i>🍔</i><b>Restaurantes</b><span>Cardápio e operação</span></div><div class="segment"><i>💅</i><b>Estética</b><span>Serviços e agenda</span></div><div class="segment"><i>🩺</i><b>Clínicas</b><span>Atendimento e agenda</span></div><div class="segment"><i>🛍️</i><b>Lojas</b><span>Produtos e clientes</span></div><div class="segment"><i>🛠️</i><b>Oficinas</b><span>Agenda e orçamento</span></div><div class="segment"><i>🏠</i><b>Imobiliárias</b><span>Leads e visitas</span></div><div class="segment"><i>🍧</i><b>Delivery</b><span>Catálogo e pedidos</span></div><div class="segment"><i>🍷</i><b>Adegas</b><span>Catálogo e operação 18+</span></div>
-</div></div></section>
+<section class="section white" id="fluxos">
+  <div class="wrap">
+    <div class="section-head"><div class="eyebrow">DOIS FLUXOS COMPLETOS</div><h2>O cliente resolve. A operação continua automaticamente.</h2><p>Pedido e agendamento têm experiências diferentes para o cliente, mas chegam organizados na mesma central operacional.</p></div>
+    <div class="flow-switch">
+      <article class="journey">
+        <div class="journey-top"><div><h3>Fluxo de pedido / delivery</h3><p>Restaurantes, marmitarias, adegas, lojas e operações de entrega.</p></div><i>🛵</i></div>
+        <div class="journey-list">
+          <div class="journey-step"><span>1</span><div><b>Cliente escolhe os itens</b><p>Produtos, quantidades, adicionais e observações.</p></div></div>
+          <div class="journey-step"><span>2</span><div><b>Define entrega ou retirada</b><p>Se for entrega, o endereço entra antes do pagamento.</p></div></div>
+          <div class="journey-step"><span>3</span><div><b>PIX pode ser gerado</b><p>Quando a integração está configurada, o pagamento entra no próprio fluxo.</p></div></div>
+          <div class="journey-step"><span>4</span><div><b>Pedido entra na Central 360</b><p>O estabelecimento acompanha recebido, aceito, preparo, pronto, entrega e conclusão.</p></div></div>
+          <div class="journey-step"><span>5</span><div><b>Gestão acompanha</b><p>Financeiro, cliente e estoque recebem os reflexos do pedido conforme a configuração.</p></div></div>
+        </div>
+        <div class="journey-foot"><b>Resultado:</b> o pedido deixa de ser uma conversa solta e vira um processo operacional acompanhável.</div>
+      </article>
+      <article class="journey">
+        <div class="journey-top"><div><h3>Fluxo de agendamento</h3><p>Barbearias, estética, clínicas, oficinas e negócios baseados em horários.</p></div><i>📅</i></div>
+        <div class="journey-list">
+          <div class="journey-step"><span>1</span><div><b>Cliente escolhe o serviço</b><p>Serviço, duração e valor configurados pelo estabelecimento.</p></div></div>
+          <div class="journey-step"><span>2</span><div><b>Escolhe profissional e data</b><p>O sistema consulta os horários livres disponíveis.</p></div></div>
+          <div class="journey-step"><span>3</span><div><b>Reserva o horário</b><p>Nome, WhatsApp e observações ficam vinculados ao agendamento.</p></div></div>
+          <div class="journey-step"><span>4</span><div><b>PIX opcional</b><p>Serviços pagos podem usar cobrança; serviços sem cobrança aparecem corretamente como tal.</p></div></div>
+          <div class="journey-step"><span>5</span><div><b>Equipe acompanha</b><p>Agenda 360 exibe o compromisso, pagamento e ações de conclusão ou cancelamento.</p></div></div>
+        </div>
+        <div class="journey-foot"><b>Resultado:</b> menos troca de mensagens para encontrar horário e uma agenda operacional centralizada.</div>
+      </article>
+    </div>
+  </div>
+</section>
 
-<section class="cta-section"><div class="wrap cta-box"><div><h2>Veja a operação funcionando por dentro.</h2><p>A demonstração abre o painel completo do AtendeBot 360 para explorar os módulos e fluxos.</p></div><a class="btn primary" href="/">Abrir demonstração →</a></div></section>
+<section class="section" id="automacao">
+  <div class="wrap">
+    <div class="section-head"><div class="eyebrow">AUTOMAÇÃO REAL</div><h2>O pagamento não termina no QR Code.</h2><p>Quando a integração PIX está configurada, o objetivo é que a confirmação faça parte do processo operacional — e não seja apenas uma imagem de cobrança.</p></div>
+    <div class="sync">
+      <div class="sync-board">
+        <h3>Um evento atualiza o restante da operação.</h3>
+        <p>Pedidos e agendamentos podem acionar diferentes áreas do sistema sem exigir que o comerciante refaça o mesmo trabalho em várias telas.</p>
+        <div class="sync-map">
+          <div class="sync-col"><div class="sync-item"><b>Pedido / agenda</b><span>Origem da operação</span></div><div class="sync-item"><b>Pagamento PIX</b><span>Confirmação por integração</span></div><div class="sync-item"><b>Status</b><span>Acompanhamento do processo</span></div></div>
+          <div class="sync-core">ATENDE<br>BOT 360</div>
+          <div class="sync-col"><div class="sync-item"><b>Financeiro</b><span>Movimentação vinculada</span></div><div class="sync-item"><b>Estoque</b><span>Baixa / restauração quando aplicável</span></div><div class="sync-item"><b>Notificação</b><span>Equipe avisada no fluxo</span></div></div>
+        </div>
+      </div>
+      <div class="sync-side">
+        <article class="sync-card"><h4>PIX por integração</h4><p>Estrutura preparada para cobrança, QR Code, copia e cola e confirmação automática por webhook quando a conta do estabelecimento estiver conectada.</p><span class="pill">AUTOMAÇÃO</span></article>
+        <article class="sync-card"><h4>Notificações no celular</h4><p>Web Push permite que o dispositivo autorizado receba alertas de novos eventos sem depender de ficar olhando o painel.</p><span class="pill">TEMPO REAL</span></article>
+        <article class="sync-card"><h4>WhatsApp com um toque</h4><p>Pedidos e agendamentos mantêm o telefone do cliente disponível para contato rápido quando a equipe precisar assumir a conversa.</p><span class="pill">HUMANO + DIGITAL</span></article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section white" id="canais">
+  <div class="wrap">
+    <div class="section-head"><div class="eyebrow">ONDE O CLIENTE USA</div><h2>Uma experiência que cabe nos canais que o negócio já utiliza.</h2><p>O estabelecimento não precisa ensinar o cliente a instalar outro aplicativo para começar a usar.</p></div>
+    <div class="channels">
+      <article class="channel"><i>🔗</i><h4>Link próprio</h4><p>Página pública do negócio para compartilhar diretamente com clientes.</p></article>
+      <article class="channel"><i>◎</i><h4>Instagram</h4><p>O link pode ser usado na bio e em campanhas que levem para o atendimento.</p></article>
+      <article class="channel"><i>💬</i><h4>WhatsApp</h4><p>O estabelecimento pode enviar o link e depois assumir a conversa quando necessário.</p></article>
+      <article class="channel"><i>▣</i><h4>Site e QR Code</h4><p>Widget no site e QR Code para balcão, embalagem, cartão ou material impresso.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="segmentos">
+  <div class="wrap">
+    <div class="section-head"><div class="eyebrow">MULTI-SEGMENTO</div><h2>Mesma plataforma. Operações diferentes.</h2><p>Os módulos e a experiência pública mudam conforme a realidade do estabelecimento.</p></div>
+    <div class="segments">
+      <div class="segment"><i>✂️</i><b>Barbearias</b><span>Agenda + clientes</span><small>Serviço, profissional, horário e acompanhamento.</small></div>
+      <div class="segment"><i>🍱</i><b>Marmitarias</b><span>Pedido + delivery</span><small>Cardápio rápido, endereço, retirada e pagamento.</small></div>
+      <div class="segment"><i>🍔</i><b>Restaurantes</b><span>Cardápio + operação</span><small>Produtos, adicionais, pedidos e fila de preparo.</small></div>
+      <div class="segment"><i>💅</i><b>Estética</b><span>Serviços + agenda</span><small>Profissionais, duração e horários disponíveis.</small></div>
+      <div class="segment"><i>🩺</i><b>Clínicas</b><span>Atendimento + agenda</span><small>Organização de horários e contato do cliente.</small></div>
+      <div class="segment"><i>🛍️</i><b>Lojas</b><span>Produtos + clientes</span><small>Catálogo, pedidos, histórico e operação.</small></div>
+      <div class="segment"><i>🛠️</i><b>Oficinas</b><span>Agenda + orçamento</span><small>Reservas, avaliação e acompanhamento.</small></div>
+      <div class="segment"><i>🏠</i><b>Imobiliárias</b><span>Leads + visitas</span><small>Interesse, contato e agenda de visita.</small></div>
+      <div class="segment"><i>🍧</i><b>Delivery</b><span>Catálogo + entrega</span><small>Endereço, pagamento e status do pedido.</small></div>
+      <div class="segment"><i>🍷</i><b>Adegas</b><span>Catálogo + operação 18+</span><small>Unidade, pack, fardo, caixa, combos e entrega.</small></div>
+    </div>
+  </div>
+</section>
+
+<section class="section white">
+  <div class="wrap">
+    <div class="section-head"><div class="eyebrow">POR QUE A PLATAFORMA TEM VALOR</div><h2>Menos ferramentas soltas. Mais contexto em uma única operação.</h2><p>O ganho de valor vem da integração dos módulos, não de acumular telas.</p></div>
+    <div class="compare">
+      <article class="compare-card before"><h3>Operação fragmentada</h3><div class="compare-list">
+        <div class="compare-row"><i>×</i><div><b>Pedidos em conversa</b><br>Difícil saber o que já foi aceito, preparado ou entregue.</div></div>
+        <div class="compare-row"><i>×</i><div><b>Agenda separada</b><br>Horários precisam ser confirmados manualmente.</div></div>
+        <div class="compare-row"><i>×</i><div><b>Financeiro depois</b><br>Pagamento e operação não compartilham o mesmo contexto.</div></div>
+        <div class="compare-row"><i>×</i><div><b>Cliente sem histórico</b><br>Cada contato começa praticamente do zero.</div></div>
+        <div class="compare-row"><i>×</i><div><b>Equipe sem visão única</b><br>Cada pessoa acompanha uma parte diferente.</div></div>
+      </div></article>
+      <article class="compare-card after"><h3>AtendeBot 360</h3><div class="compare-list">
+        <div class="compare-row"><i>✓</i><div><b>Fluxo rastreável</b><br>Pedido e agenda possuem etapas claras até a conclusão.</div></div>
+        <div class="compare-row"><i>✓</i><div><b>Cliente centralizado</b><br>Histórico e dados ficam ligados à operação.</div></div>
+        <div class="compare-row"><i>✓</i><div><b>Pagamento conectado</b><br>PIX pode confirmar e refletir no restante do sistema.</div></div>
+        <div class="compare-row"><i>✓</i><div><b>Equipe organizada</b><br>Usuários e permissões ajudam a separar responsabilidades.</div></div>
+        <div class="compare-row"><i>✓</i><div><b>Gestão no mesmo ecossistema</b><br>Financeiro, estoque e operação usam a mesma base de contexto.</div></div>
+      </div></article>
+    </div>
+  </div>
+</section>
+
+<section class="section dark" id="estrutura">
+  <div class="wrap">
+    <div class="section-head"><div class="eyebrow">ESTRUTURA DO PRODUTO</div><h2>Construído para funcionar como plataforma.</h2><p>A base já trabalha com autenticação, banco de dados, permissões e módulos separados por responsabilidade.</p></div>
+    <div class="tech">
+      <article class="tech-card"><i>DB</i><b>PostgreSQL</b><span>Persistência de dados operacionais, usuários e configurações do sistema.</span></article>
+      <article class="tech-card"><i>↯</i><b>Webhooks</b><span>Estrutura para receber eventos externos, como confirmação de pagamento.</span></article>
+      <article class="tech-card"><i>🔔</i><b>Web Push</b><span>Notificações para dispositivos autorizados quando a configuração estiver ativa.</span></article>
+      <article class="tech-card"><i>👥</i><b>Permissões</b><span>Usuários individuais e controle de acesso às áreas da operação.</span></article>
+      <article class="tech-card"><i>AI</i><b>IA conectável</b><span>Camada de inteligência preparada para responder com contexto do estabelecimento.</span></article>
+      <article class="tech-card"><i>↗</i><b>Multiempresa</b><span>Configuração do negócio e módulos ligados à conta de cada operação.</span></article>
+      <article class="tech-card"><i>▦</i><b>Templates</b><span>Segmentos usam estruturas próprias de agenda, catálogo e atendimento.</span></article>
+      <article class="tech-card"><i>☁</i><b>Deploy web</b><span>Experiência acessível por navegador no painel e na página pública do cliente.</span></article>
+    </div>
+    <div class="note"><b>Importante:</b> integrações externas como PIX e notificações dependem das credenciais e configurações do estabelecimento. A demonstração apresenta a estrutura e os fluxos da plataforma sem inventar dados de faturamento ou clientes.</div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="wrap cta-box">
+    <div><h2>Agora veja a operação funcionando por dentro.</h2><p>A demonstração permite explorar a Central 360 e os módulos que transformam o AtendeBot de um simples chatbot em uma plataforma operacional completa.</p></div>
+    <div class="cta-actions"><a class="btn primary" href="/">Abrir demonstração →</a><a class="btn ghost" href="#modulos">Rever módulos</a></div>
+  </div>
+</section>
 </main>
-<footer class="footer"><div class="wrap footer-in"><span><b>AtendeBot 360</b> • Central Operacional Inteligente</span><span>Atendimento • Operação • Gestão</span></div></footer>
+
+<footer class="footer"><div class="wrap footer-in"><span><b>AtendeBot 360</b> • Central Operacional Inteligente</span><span>Atendimento • Vendas • Operação • Gestão</span></div></footer>
 </body>
 </html>
