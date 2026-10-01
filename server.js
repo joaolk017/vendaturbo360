@@ -1722,6 +1722,12 @@ async function handleApi(req, res, urlPath) {
     }
   }
 
+  const wooviWebhookMatch=urlPath.match(/^\/api\/webhooks\/woovi\/([^/]+)$/);
+  if(wooviWebhookMatch&&req.method==='POST'){
+    try{return await handleWooviWebhook360(req,res,wooviWebhookMatch[1]);}
+    catch(e){console.error('Erro webhook Woovi:',e);return json(res,500,{error:'Falha no webhook.'});}
+  }
+
   const publicBotMatch = urlPath.match(/^\/api\/public\/bot\/([^/]+)$/);
   if (publicBotMatch && req.method === 'GET') {
     const user = await findUserById(publicBotMatch[1]);
@@ -1743,6 +1749,17 @@ async function handleApi(req, res, urlPath) {
     } catch (e) {
       return json(res, 400, { error: e.message || 'Não foi possível criar o pedido.' });
     }
+  }
+
+  const publicOrderStatusMatch=urlPath.match(/^\/api\/public\/bot\/([^/]+)\/orders\/([^/]+)\/status$/);
+  if(publicOrderStatusMatch&&req.method==='GET'){
+    const [_,botUserId,orderId]=publicOrderStatusMatch;
+    if(pool){
+      const r=await pool.query('SELECT id,code,status,payment_status,total FROM orders WHERE id=$1 AND user_id=$2',[orderId,botUserId]);
+      if(!r.rowCount)return json(res,404,{error:'Pedido não encontrado.'});
+      const x=r.rows[0];return json(res,200,{id:x.id,code:x.code,status:x.status,paymentStatus:x.payment_status,total:Number(x.total||0)});
+    }
+    const x=(mem.orders.get(botUserId)||[]).find(o=>o.id===orderId);return x?json(res,200,{id:x.id,code:x.code,status:x.status,paymentStatus:x.paymentStatus,total:x.total}):json(res,404,{error:'Pedido não encontrado.'});
   }
 
   const availabilityMatch = urlPath.match(/^\/api\/public\/bot\/([^/]+)\/availability$/);
@@ -1856,6 +1873,7 @@ async function handleApi(req, res, urlPath) {
   if (!auth) return json(res, 401, { error: 'Sessão inválida ou expirada.' });
   const user = await findUserById(auth.sub);
   if (!user) return json(res, 401, { error: 'Usuário não encontrado.' });
+  const can=(permission)=>hasPermission(auth,permission);
 
   if (req.method === 'GET' && urlPath === '/api/push/public-key') {
     return json(res, 200, { configured: pushReady(), publicKey: VAPID_PUBLIC_KEY || '' });
@@ -1872,10 +1890,12 @@ async function handleApi(req, res, urlPath) {
     return json(res,200,result);
   }
   if (req.method === 'GET' && urlPath === '/api/appointments') {
+    if(!can('appointments'))return forbidden(res);
     return json(res,200,{appointments:await listAppointments(auth.sub)});
   }
   const appointmentMatch=urlPath.match(/^\/api\/appointments\/([^/]+)$/);
   if (appointmentMatch && req.method === 'PATCH') {
+    if(!can('appointments'))return forbidden(res);
     const body=await parseBody(req);
     const appointment=await updateAppointment(auth.sub,appointmentMatch[1],body);
     return appointment?json(res,200,{appointment}):json(res,404,{error:'Agendamento não encontrado.'});
@@ -1883,12 +1903,15 @@ async function handleApi(req, res, urlPath) {
 
 
   if (req.method === 'GET' && urlPath === '/api/operations/summary') {
+    if(!can('central'))return forbidden(res);
     return json(res,200,await operationsSummary(auth.sub));
   }
   if (req.method === 'GET' && urlPath === '/api/tasks') {
+    if(!can('central'))return forbidden(res);
     return json(res,200,{tasks:await listTasks(auth.sub)});
   }
   if (req.method === 'POST' && urlPath === '/api/tasks') {
+    if(!can('central'))return forbidden(res);
     try{
       const body=await parseBody(req);
       return json(res,201,{task:await createTask(auth.sub,body)});
@@ -1896,6 +1919,7 @@ async function handleApi(req, res, urlPath) {
   }
   const taskMatch=urlPath.match(/^\/api\/tasks\/([^/]+)$/);
   if (taskMatch && req.method === 'PATCH') {
+    if(!can('central'))return forbidden(res);
     const body=await parseBody(req);
     const task=await updateTask(auth.sub,taskMatch[1],body);
     return task?json(res,200,{task}):json(res,404,{error:'Tarefa não encontrada.'});
@@ -1903,54 +1927,82 @@ async function handleApi(req, res, urlPath) {
 
 
   if (req.method === 'GET' && urlPath === '/api/customers') {
+    if(!can('customers'))return forbidden(res);
     return json(res,200,{customers:await listCustomers360(auth.sub)});
   }
   const customerMatch=urlPath.match(/^\/api\/customers\/([^/]+)$/);
   if (customerMatch && req.method === 'GET') {
+    if(!can('customers'))return forbidden(res);
     try{return json(res,200,{history:await customerHistory360(auth.sub,decodeURIComponent(customerMatch[1]))});}
     catch(e){return json(res,400,{error:e.message});}
   }
   if (customerMatch && req.method === 'PATCH') {
+    if(!can('customers'))return forbidden(res);
     try{const body=await parseBody(req);return json(res,200,{profile:await saveCustomerProfile360(auth.sub,decodeURIComponent(customerMatch[1]),body)});}
     catch(e){return json(res,400,{error:e.message});}
   }
 
+  if(req.method==='GET'&&urlPath==='/api/payments/integration'){
+    if(!can('finance')&&!can('settings'))return forbidden(res);
+    return json(res,200,await paymentIntegrationPublic360(auth.sub,req));
+  }
+  if(req.method==='POST'&&urlPath==='/api/payments/integration'){
+    if(!can('finance')&&!can('settings'))return forbidden(res);
+    try{const body=await parseBody(req);return json(res,200,await savePaymentIntegration360(auth.sub,body,req));}catch(e){return json(res,400,{error:e.message});}
+  }
+
   if (req.method === 'GET' && urlPath === '/api/finance/summary') {
+    if(!can('finance'))return forbidden(res);
     return json(res,200,await financeSummary360(auth.sub));
   }
   if (req.method === 'POST' && urlPath === '/api/finance/entries') {
+    if(!can('finance'))return forbidden(res);
     try{const body=await parseBody(req);return json(res,201,{entry:await createFinanceEntry360(auth.sub,body)});}catch(e){return json(res,400,{error:e.message});}
   }
   const financeEntryMatch=urlPath.match(/^\/api\/finance\/entries\/([^/]+)$/);
   if(financeEntryMatch && req.method==='PATCH'){
+    if(!can('finance'))return forbidden(res);
     const body=await parseBody(req),entry=await updateFinanceEntry360(auth.sub,financeEntryMatch[1],body);
     return entry?json(res,200,{entry}):json(res,404,{error:'Lançamento não encontrado.'});
   }
   if(req.method==='POST'&&urlPath==='/api/finance/pix'){
+    if(!can('finance'))return forbidden(res);
     try{const body=await parseBody(req);return json(res,200,await createPixPayload360(auth.sub,body));}catch(e){return json(res,400,{error:e.message});}
   }
 
-  if(req.method==='GET'&&urlPath==='/api/team')return json(res,200,{members:await listTeam360(auth.sub)});
-  if(req.method==='POST'&&urlPath==='/api/team'){try{const body=await parseBody(req);return json(res,201,{member:await createTeam360(auth.sub,body)});}catch(e){return json(res,400,{error:e.message});}}
+  const teamAccessMatch=urlPath.match(/^\/api\/team\/([^/]+)\/access$/);
+  if(teamAccessMatch&&req.method==='POST'){
+    if(!can('team'))return forbidden(res);
+    try{const body=await parseBody(req);return json(res,200,{access:await createStaffAccess360(auth.sub,teamAccessMatch[1],body)});}catch(e){return json(res,400,{error:e.message});}
+  }
+  const staffAccessMatch=urlPath.match(/^\/api\/staff\/([^/]+)$/);
+  if(staffAccessMatch&&req.method==='PATCH'){
+    if(!can('team'))return forbidden(res);
+    try{const body=await parseBody(req),access=await updateStaffAccess360(auth.sub,staffAccessMatch[1],body);return access?json(res,200,{access}):json(res,404,{error:'Acesso não encontrado.'});}catch(e){return json(res,400,{error:e.message});}
+  }
+  if(req.method==='GET'&&urlPath==='/api/team'){if(!can('team'))return forbidden(res);return json(res,200,{members:await listTeam360(auth.sub)});}
+  if(req.method==='POST'&&urlPath==='/api/team'){if(!can('team'))return forbidden(res);try{const body=await parseBody(req);return json(res,201,{member:await createTeam360(auth.sub,body)});}catch(e){return json(res,400,{error:e.message});}}
   const teamMatch=urlPath.match(/^\/api\/team\/([^/]+)$/);
-  if(teamMatch&&req.method==='PATCH'){const body=await parseBody(req),member=await updateTeam360(auth.sub,teamMatch[1],body);return member?json(res,200,{member}):json(res,404,{error:'Membro não encontrado.'});}
+  if(teamMatch&&req.method==='PATCH'){if(!can('team'))return forbidden(res);const body=await parseBody(req),member=await updateTeam360(auth.sub,teamMatch[1],body);return member?json(res,200,{member}):json(res,404,{error:'Membro não encontrado.'});}
 
-  if(req.method==='GET'&&urlPath==='/api/inventory')return json(res,200,{items:await listInventory360(auth.sub)});
-  if(req.method==='POST'&&urlPath==='/api/inventory'){try{const body=await parseBody(req);return json(res,201,{item:await createInventory360(auth.sub,body)});}catch(e){return json(res,400,{error:e.message});}}
+  if(req.method==='GET'&&urlPath==='/api/inventory'){if(!can('inventory'))return forbidden(res);return json(res,200,{items:await listInventory360(auth.sub)});}
+  if(req.method==='POST'&&urlPath==='/api/inventory'){if(!can('inventory'))return forbidden(res);try{const body=await parseBody(req);return json(res,201,{item:await createInventory360(auth.sub,body)});}catch(e){return json(res,400,{error:e.message});}}
   const inventoryMatch=urlPath.match(/^\/api\/inventory\/([^/]+)$/);
-  if(inventoryMatch&&req.method==='PATCH'){const body=await parseBody(req),item=await updateInventory360(auth.sub,inventoryMatch[1],body);return item?json(res,200,{item}):json(res,404,{error:'Item não encontrado.'});}
+  if(inventoryMatch&&req.method==='PATCH'){if(!can('inventory'))return forbidden(res);const body=await parseBody(req),item=await updateInventory360(auth.sub,inventoryMatch[1],body);return item?json(res,200,{item}):json(res,404,{error:'Item não encontrado.'});}
 
   if (req.method === 'GET' && urlPath === '/api/me') {
     const me=(auth.accountType||'owner')==='staff'?normalizeStaff({...auth,id:auth.staffId,team_member_id:auth.teamMemberId,member_name:auth.name},user):normalizeUser(user);
     return json(res, 200, { user: me, persistence: pool ? 'postgres' : 'memory' });
   }
   if (req.method === 'GET' && urlPath === '/api/insights') {
+    if(!can('growth'))return forbidden(res);
     return json(res, 200, await getInsights(auth.sub));
   }
   if (req.method === 'GET' && urlPath === '/api/ai/status') {
     return json(res, 200, await getAiUsageSummary(auth.sub));
   }
   if (req.method === 'POST' && urlPath === '/api/brain/test') {
+    if(!can('growth')&&!can('chatbot'))return forbidden(res);
     const body = await parseBody(req);
     const cfg = publicConfig(user, await getBotConfig(auth.sub));
     const message = String(body.message || '').slice(0,4000);
@@ -1964,31 +2016,37 @@ async function handleApi(req, res, urlPath) {
     return json(res, 200, await getState(auth.sub));
   }
   if (req.method === 'PUT' && urlPath === '/api/state') {
+    if(!can('settings')&&!can('chatbot'))return forbidden(res);
     const body = await parseBody(req);
     await saveState(auth.sub, body);
     return json(res, 200, { ok: true });
   }
   if (req.method === 'GET' && urlPath === '/api/orders') {
+    if(!can('orders'))return forbidden(res);
     const state = await getState(auth.sub);
     return json(res, 200, { orders: state.orders || [] });
   }
   const orderMatch = urlPath.match(/^\/api\/orders\/([^/]+)$/);
   if (orderMatch && req.method === 'PATCH') {
+    if(!can('orders'))return forbidden(res);
     const body = await parseBody(req);
     const order = await updateOrder(auth.sub, orderMatch[1], body);
     return order ? json(res, 200, { order }) : json(res, 404, { error: 'Pedido não encontrado.' });
   }
 
   if (req.method === 'POST' && urlPath === '/api/leads') {
+    if(!can('leads'))return forbidden(res);
     const body = await parseBody(req);
     return json(res, 201, { lead: await addLead(auth.sub, body) });
   }
   if (req.method === 'DELETE' && urlPath === '/api/leads') {
+    if(!can('leads'))return forbidden(res);
     await clearLeads(auth.sub);
     return json(res, 200, { ok: true });
   }
   const match = urlPath.match(/^\/api\/leads\/([^/]+)$/);
   if (match && req.method === 'PATCH') {
+    if(!can('leads'))return forbidden(res);
     const body = await parseBody(req);
     const lead = await updateLead(auth.sub, match[1], body);
     return lead ? json(res, 200, { lead }) : json(res, 404, { error: 'Lead não encontrado.' });
