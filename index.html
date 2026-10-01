@@ -259,13 +259,13 @@ function renderLeads(){const tbody=$('leadTable'),empty=$('leadEmpty');const q=(
 function seedLead(){leads.unshift({name:'Cliente Exemplo',phone:'17999999999',interest:'Orçamento de '+config.mainService,date:new Date().toLocaleString('pt-BR'),status:'new',value:0});saveAll();showToast('Lead de exemplo criado')}
 function contactLead(i){const l=leads[i];if(!l)return;l.status=l.status==='converted'?'converted':'contacted';metrics.whatsapp=(metrics.whatsapp||0)+1;saveAll();const phone=String(l.phone||'').replace(/\D/g,'');const msg=encodeURIComponent('Olá, '+l.name+'! Vi seu interesse em '+l.interest+'. Posso te ajudar?');if(phone)window.open('https://wa.me/55'+phone.replace(/^55/,'')+'?text='+msg,'_blank')}
 function registerSale(i){const l=leads[i];if(!l)return;const raw=prompt('Qual foi o valor da venda?',l.value?String(l.value).replace('.',','):'');if(raw===null)return;const value=Number(String(raw).replace(/[^0-9,.-]/g,'').replace('.','').replace(',','.'));if(!Number.isFinite(value)||value<0){showToast('Informe um valor válido');return}l.value=value;l.status='converted';saveAll();showToast('Venda registrada no funil')}
-function clearLeads(){if(confirm('Limpar todos os leads e vendas da demonstração?')){leads=[];saveAll();showToast('Leads removidos')}}
+async function clearLeads(){if(confirm('Limpar todos os leads e vendas desta conta?')){leads=[];if(window.at360Api){try{await window.at360Api('/api/leads',{method:'DELETE'})}catch(e){}}saveAll();showToast('Leads removidos')}}
 function downloadLeads(){const header='Nome,Telefone,Interesse,Data,Status,Valor\n';const rows=leads.map(l=>'"'+l.name+'","'+l.phone+'","'+l.interest+'","'+l.date+'","'+(l.status||'new')+'","'+(l.value||0)+'"').join('\n');const blob=new Blob([header+rows],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='leads-atendebot360.csv';a.click();URL.revokeObjectURL(a.href);showToast('CSV gerado')}
 
 function setInstallMode(mode,btn){installMode=mode;document.querySelectorAll('[data-install]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const code=$('embedCode'),link=$('shareLink');if(mode==='link'){code.style.display='none';link.style.display='block'}else{code.style.display='block';link.style.display='none';code.textContent=mode==='wordpress'?'Cole este código em um bloco HTML ou no rodapé do WordPress:\n\n<!-- AtendeBot 360 -->\n<script src="https://atendebot360.onrender.com/widget.js" data-business="'+config.businessName+'" data-whatsapp="'+config.whatsappNumber+'"><\/script>':'<!-- AtendeBot 360 -->\n<script src="https://atendebot360.onrender.com/widget.js" data-business="'+config.businessName+'" data-whatsapp="'+config.whatsappNumber+'"><\/script>'}}
 function copyInstall(){const text=installMode==='link'?$('shareLink').textContent:$('embedCode').textContent;navigator.clipboard.writeText(text);showToast('Copiado')}
 
-function resetDemo(){if(confirm('Restaurar todos os dados da demonstração?')){localStorage.removeItem('at360_config');localStorage.removeItem('at360_leads');localStorage.removeItem('at360_metrics');config={...templates.barbearia,whatsappNumber:'5517999999999',template:'barbearia'};leads=[];metrics={chats:0,whatsapp:0};fillForms();renderTemplates();saveAll();resetChat();showToast('Demonstração restaurada')}}
+async function resetDemo(){if(confirm('Restaurar os dados desta conta?')){localStorage.removeItem('at360_config');localStorage.removeItem('at360_leads');localStorage.removeItem('at360_metrics');config={...templates.barbearia,whatsappNumber:'5517999999999',template:'barbearia',botId:window.at360Account?.id||config.botId};leads=[];metrics={chats:0,whatsapp:0};if(window.at360Api){try{await window.at360Api('/api/leads',{method:'DELETE'})}catch(e){}}fillForms();renderTemplates();saveAll();resetChat();showToast('Dados restaurados')}}
 function syncChatState(){document.body.classList.toggle('chat-open',$('chat').classList.contains('open'))}
 function toggleChat(){const c=$('chat');const opening=!c.classList.contains('open');c.classList.toggle('open');syncChatState();if(opening&&!$('chatBody').children.length){metrics.chats=(metrics.chats||0)+1;saveAll();startChat()}}
 function openChat(){const c=$('chat');if(!c.classList.contains('open')){c.classList.add('open');metrics.chats=(metrics.chats||0)+1;saveAll()}syncChatState();if(!$('chatBody').children.length)startChat()}
@@ -289,5 +289,7 @@ $('chatForm').addEventListener('submit',e=>{e.preventDefault();const txt=$('chat
 
 renderTemplates();renderWizardSegments();fillForms();saveAll();
 </script>
-<script src="/auth.js"></script>\n<script src="/premium360.js"></script>\n</body>
+<script src="/auth.js"></script>
+<script src="/premium360.js"></script>
+</body>
 </html>
