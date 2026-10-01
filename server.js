@@ -949,6 +949,52 @@ function publicOrder(row) {
 function orderCode() {
   return 'P' + Date.now().toString().slice(-6) + crypto.randomBytes(1).toString('hex').toUpperCase();
 }
+
+async function syncOrderInventory360(userId,order,mode='apply'){
+  const items=Array.isArray(order?.items)?order.items:[];if(!items.length)return {changed:0};
+  if(!pool){
+    const stock=mem.inventory.get(userId)||[];let changed=0;
+    for(const it of items){
+      const s=stock.find(x=>String(x.catalogItemId||'')===String(it.id||'')&&x.active!==false);if(!s)continue;
+      if(mode==='apply'&&!s._orders?.includes(order.id)){
+        s._orders=s._orders||[];s._orders.push(order.id);s.quantity=Math.max(0,Number(s.quantity||0)-Number(it.qty||0));changed++;
+      }else if(mode==='restore'&&s._orders?.includes(order.id)){
+        s._orders=s._orders.filter(x=>x!==order.id);s.quantity=Number(s.quantity||0)+Number(it.qty||0);changed++;
+      }
+    }
+    return {changed};
+  }
+  const client=await pool.connect();let changed=0,low=[];
+  try{
+    await client.query('BEGIN');
+    for(const it of items){
+      const s=await client.query('SELECT * FROM inventory_items WHERE user_id=$1 AND catalog_item_id=$2 AND active=TRUE ORDER BY created_at LIMIT 1 FOR UPDATE',[userId,String(it.id||'')]);
+      if(!s.rowCount)continue;
+      const inv=s.rows[0],qty=Math.max(0,Number(it.qty||0));
+      if(mode==='apply'){
+        const exists=await client.query("SELECT id FROM inventory_movements WHERE user_id=$1 AND inventory_item_id=$2 AND source_type='order' AND source_id=$3 AND kind='deduct'",[userId,inv.id,order.id]);
+        if(exists.rowCount)continue;
+        const current=Math.max(0,Number(inv.quantity||0)),actual=Math.min(current,qty),next=Math.max(0,current-actual);
+        await client.query('UPDATE inventory_items SET quantity=$1,updated_at=NOW() WHERE id=$2',[next,inv.id]);
+        await client.query("INSERT INTO inventory_movements(id,user_id,inventory_item_id,source_type,source_id,kind,delta) VALUES($1,$2,$3,'order',$4,'deduct',$5)",[safeId(),userId,inv.id,order.id,-actual]);
+        changed++;if(next<=Number(inv.min_quantity||0))low.push({name:inv.name,quantity:next,unit:inv.unit||'un'});
+      }else if(mode==='restore'){
+        const d=await client.query("SELECT * FROM inventory_movements WHERE user_id=$1 AND inventory_item_id=$2 AND source_type='order' AND source_id=$3 AND kind='deduct'",[userId,inv.id,order.id]);
+        if(!d.rowCount)continue;
+        const restored=await client.query("SELECT id FROM inventory_movements WHERE user_id=$1 AND inventory_item_id=$2 AND source_type='order' AND source_id=$3 AND kind='restore'",[userId,inv.id,order.id]);
+        if(restored.rowCount)continue;
+        const amount=Math.abs(Number(d.rows[0].delta||0)),next=Number(inv.quantity||0)+amount;
+        await client.query('UPDATE inventory_items SET quantity=$1,updated_at=NOW() WHERE id=$2',[next,inv.id]);
+        await client.query("INSERT INTO inventory_movements(id,user_id,inventory_item_id,source_type,source_id,kind,delta) VALUES($1,$2,$3,'order',$4,'restore',$5)",[safeId(),userId,inv.id,order.id,amount]);
+        changed++;
+      }
+    }
+    await client.query('COMMIT');
+  }catch(e){await client.query('ROLLBACK');throw e}finally{client.release()}
+  if(low.length)notifyUser(userId,{title:'📦 Estoque baixo',body:low.slice(0,2).map(x=>x.name+': '+x.quantity+' '+x.unit).join(' • '),url:'/?view=inventory',tag:'stock-low'}).catch(()=>{});
+  return {changed,low};
+}
+
 async function createPublicOrder(userId, cfg, body) {
   const delivery = cfg.delivery || {};
   if (!delivery.enabled) throw new Error('Pedidos online não estão habilitados para este negócio.');
@@ -1016,6 +1062,9 @@ async function createPublicOrder(userId, cfg, body) {
     url:'/?view=orders',
     tag:'order-'+order.id
   }).catch(()=>{});
+  if(pool&&order.total>0){
+    try{order.pix=await createWooviCharge360(userId,{sourceType:'order',sourceId:order.id,amount:order.total,comment:'Pedido '+order.code,customer:{name:order.customerName,phone:order.phone}})}catch(e){console.error('Falha ao criar Pix automático:',e.message)}
+  }
   return order;
 }
 async function updateOrder(userId, id, patch) {
@@ -1030,7 +1079,10 @@ async function updateOrder(userId, id, patch) {
     await pool.query('UPDATE orders SET status=$1,payment_status=$2,updated_at=NOW() WHERE id=$3 AND user_id=$4',[status,paymentStatus,id,userId]);
     await pool.query(`UPDATE financial_entries SET status=$1,paid_at=CASE WHEN $1='paid' THEN COALESCE(paid_at,NOW()) ELSE paid_at END,updated_at=NOW()
       WHERE user_id=$2 AND source_type='order' AND source_id=$3`,[paymentStatus,userId,id]);
-    return publicOrder({...cur,status,payment_status:paymentStatus});
+    const updated=publicOrder({...cur,status,payment_status:paymentStatus});
+    if(status==='cancelled')await syncOrderInventory360(userId,updated,'restore');
+    else if(paymentStatus==='paid'||['accepted','preparing','ready','out_for_delivery','completed'].includes(status))await syncOrderInventory360(userId,updated,'apply');
+    return updated;
   }
   const arr = mem.orders.get(userId) || [];
   const o = arr.find(x=>x.id===id); if(!o)return null;
@@ -1170,6 +1222,9 @@ async function createAppointment(userId,cfg,body) {
     arr.unshift(appointmentPublic(row));mem.appointments.set(userId,arr);
   }
   const appt=appointmentPublic(row);
+  if(pool&&appt.servicePrice>0){
+    try{appt.pix=await createWooviCharge360(userId,{sourceType:'appointment',sourceId:appt.id,amount:appt.servicePrice,comment:'Agendamento '+appt.code,customer:{name:appt.customerName,phone:appt.phone}})}catch(e){console.error('Falha ao criar Pix do agendamento:',e.message)}
+  }
   notifyUser(userId,{
     title:'✂️ Novo agendamento',
     body:appt.customerName+' • '+appt.serviceName+' • '+appt.date.split('-').reverse().join('/')+' às '+appt.time+' • '+appt.professionalName,
