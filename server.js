@@ -369,7 +369,10 @@ function extractResponseText(data) {
   return '';
 }
 async function callGenerativeAi(userId, cfg, message, history=[]) {
-  if (!OPENAI_API_KEY) return null;
+  const aiKey = GROQ_API_KEY || OPENAI_API_KEY;
+  const aiModel = GROQ_API_KEY ? GROQ_MODEL : OPENAI_MODEL;
+  const aiEndpoint = GROQ_API_KEY ? 'https://api.groq.com/openai/v1/responses' : 'https://api.openai.com/v1/responses';
+  if (!aiKey) return null;
   if (await aiRequestsToday(userId) >= AI_DAILY_REQUEST_LIMIT) return { limited: true };
   const transcript = history.slice(-10).map(x => {
     const role = x?.role === 'bot' || x?.role === 'assistant' ? 'Atendente' : 'Cliente';
@@ -379,14 +382,14 @@ async function callGenerativeAi(userId, cfg, message, history=[]) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 12_000);
   try {
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    const response = await fetch(aiEndpoint, {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + OPENAI_API_KEY,
+        'Authorization': 'Bearer ' + aiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: OPENAI_MODEL,
+        model: aiModel,
         instructions: buildAiInstructions(cfg),
         input,
         max_output_tokens: 350,
@@ -397,13 +400,13 @@ async function callGenerativeAi(userId, cfg, message, history=[]) {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       console.error('Falha na IA generativa:', response.status, data?.error?.message || 'erro sem mensagem');
-      await logAiUsage(userId, OPENAI_MODEL, {}, 'error');
+      await logAiUsage(userId, aiModel, {}, 'error');
       return null;
     }
     const text = extractResponseText(data);
     if (!text) return null;
-    await logAiUsage(userId, OPENAI_MODEL, data.usage || {}, 'ok');
-    return { text: text.slice(0,1800), model: OPENAI_MODEL, usage: data.usage || {} };
+    await logAiUsage(userId, aiModel, data.usage || {}, 'ok');
+    return { text: text.slice(0,1800), model: aiModel, usage: data.usage || {} };
   } catch (e) {
     console.error('IA generativa indisponível:', e.name || e.message);
     await logAiUsage(userId, OPENAI_MODEL, {}, 'error');
