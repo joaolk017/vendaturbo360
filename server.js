@@ -406,17 +406,17 @@ async function callGenerativeAi(userId, cfg, message, history=[]) {
     const text = extractResponseText(data);
     if (!text) return null;
     await logAiUsage(userId, aiModel, data.usage || {}, 'ok');
-    return { text: text.slice(0,1800), model: aiModel, usage: data.usage || {} };
+    return { text: text.slice(0,1800), model: aiModel, provider: GROQ_API_KEY ? 'groq' : 'openai', usage: data.usage || {} };
   } catch (e) {
     console.error('IA generativa indisponível:', e.name || e.message);
-    await logAiUsage(userId, OPENAI_MODEL, {}, 'error');
+    await logAiUsage(userId, aiModel, {}, 'error');
     return null;
   } finally {
     clearTimeout(timer);
   }
 }
 async function getAiUsageSummary(userId) {
-  if (!pool) return { configured: !!(GROQ_API_KEY || OPENAI_API_KEY), model: (GROQ_API_KEY ? GROQ_MODEL : OPENAI_MODEL), today:0, month:0, inputTokens:0, outputTokens:0, dailyLimit:AI_DAILY_REQUEST_LIMIT };
+  if (!pool) return { configured: !!(GROQ_API_KEY || OPENAI_API_KEY), provider: GROQ_API_KEY ? 'groq' : (OPENAI_API_KEY ? 'openai' : 'none'), model: (GROQ_API_KEY ? GROQ_MODEL : OPENAI_MODEL), today:0, month:0, inputTokens:0, outputTokens:0, dailyLimit:AI_DAILY_REQUEST_LIMIT };
   const r = await pool.query(`
     SELECT
       COUNT(*) FILTER (WHERE status='ok' AND created_at >= date_trunc('day', NOW()))::int AS today_count,
@@ -427,7 +427,7 @@ async function getAiUsageSummary(userId) {
   `, [userId]);
   const x=r.rows[0]||{};
   return {
-    configured: !!(GROQ_API_KEY || OPENAI_API_KEY), model: (GROQ_API_KEY ? GROQ_MODEL : OPENAI_MODEL),
+    configured: !!(GROQ_API_KEY || OPENAI_API_KEY), provider: GROQ_API_KEY ? 'groq' : (OPENAI_API_KEY ? 'openai' : 'none'), model: (GROQ_API_KEY ? GROQ_MODEL : OPENAI_MODEL),
     today:Number(x.today_count||0), month:Number(x.month_count||0),
     inputTokens:Number(x.input_token_count||0), outputTokens:Number(x.output_token_count||0),
     dailyLimit:AI_DAILY_REQUEST_LIMIT
@@ -629,7 +629,9 @@ async function handleApi(req, res, urlPath) {
     return json(res, 200, {
       conversationId, reply, intent: result.intent, score: result.score,
       reasons: result.reasons, askContact: result.askContact, leadCaptured: !!captured,
-      engine: ai?.text ? 'generative' : '360-rules'
+      engine: ai?.text ? 'generative' : '360-rules',
+      provider: ai?.text ? ai.provider : '360-rules',
+      model: ai?.text ? ai.model : null
     });
   }
   if (req.method === 'POST' && urlPath === '/api/auth/register') {
@@ -686,7 +688,7 @@ async function handleApi(req, res, urlPath) {
     const history = Array.isArray(body.history) ? body.history.slice(-12) : [];
     const result = buildSmartReply(cfg, message, history);
     const ai = await callGenerativeAi(auth.sub, cfg, message, history);
-    if (ai?.text) return json(res, 200, { ...result, reply: ai.text, engine:'generative', model:ai.model });
+    if (ai?.text) return json(res, 200, { ...result, reply: ai.text, engine:'generative', provider:ai.provider, model:ai.model });
     return json(res, 200, { ...result, engine: ai?.limited ? 'daily-limit' : '360-rules' });
   }
   if (req.method === 'GET' && urlPath === '/api/state') {
