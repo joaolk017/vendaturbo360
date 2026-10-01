@@ -31,7 +31,8 @@ const mimeTypes = {
 const mem = {
   users: new Map(),
   state: new Map(),
-  leads: new Map()
+  leads: new Map(),
+  orders: new Map()
 };
 const publicRate = new Map();
 
@@ -53,6 +54,7 @@ function seedDemo() {
     updatedAt: new Date().toISOString()
   });
   mem.leads.set(id, []);
+  mem.orders.set(id, []);
 }
 seedDemo();
 
@@ -109,6 +111,25 @@ async function initDb() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_ai_usage_user_date ON ai_usage(user_id, created_at);
+    CREATE TABLE IF NOT EXISTS orders (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      code TEXT NOT NULL,
+      customer_name TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      fulfillment TEXT NOT NULL,
+      address JSONB,
+      items JSONB NOT NULL DEFAULT '[]'::jsonb,
+      subtotal NUMERIC(12,2) NOT NULL DEFAULT 0,
+      delivery_fee NUMERIC(12,2) NOT NULL DEFAULT 0,
+      total NUMERIC(12,2) NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'new',
+      payment_status TEXT NOT NULL DEFAULT 'pending',
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_orders_user_created ON orders(user_id, created_at DESC);
   `);
   const demo = await pool.query('SELECT id FROM users WHERE email=$1', ['cliente@demo.com']);
   if (!demo.rowCount) {
@@ -205,6 +226,7 @@ async function createUser({ email, password, businessName }) {
   mem.users.set(email, user);
   mem.state.set(id, { config: null, metrics: { chats: 0, whatsapp: 0 }, updatedAt: new Date().toISOString() });
   mem.leads.set(id, []);
+  mem.orders.set(id, []);
   return user;
 }
 function normalizeUser(user) {
@@ -216,9 +238,10 @@ function normalizeUser(user) {
 }
 async function getState(userId) {
   if (pool) {
-    const [s, l] = await Promise.all([
+    const [s, l, o] = await Promise.all([
       pool.query('SELECT config,metrics,updated_at FROM business_state WHERE user_id=$1', [userId]),
-      pool.query('SELECT id,name,phone,interest,status,value,created_at FROM leads WHERE user_id=$1 ORDER BY created_at DESC', [userId])
+      pool.query('SELECT id,name,phone,interest,status,value,created_at FROM leads WHERE user_id=$1 ORDER BY created_at DESC', [userId]),
+      pool.query('SELECT id,code,customer_name,phone,fulfillment,address,items,subtotal,delivery_fee,total,status,payment_status,notes,created_at,updated_at FROM orders WHERE user_id=$1 ORDER BY created_at DESC LIMIT 100', [userId])
     ]);
     const state = s.rows[0] || { config: null, metrics: { chats: 0, whatsapp: 0 } };
     return {
@@ -229,11 +252,18 @@ async function getState(userId) {
         status: x.status, value: Number(x.value || 0),
         date: new Date(x.created_at).toLocaleString('pt-BR')
       })),
+      orders: o.rows.map(x => ({
+        id:x.id, code:x.code, customerName:x.customer_name, phone:x.phone,
+        fulfillment:x.fulfillment, address:x.address || {}, items:x.items || [],
+        subtotal:Number(x.subtotal||0), deliveryFee:Number(x.delivery_fee||0), total:Number(x.total||0),
+        status:x.status, paymentStatus:x.payment_status, notes:x.notes||'',
+        date:new Date(x.created_at).toLocaleString('pt-BR')
+      })),
       persistence: 'postgres'
     };
   }
   const state = mem.state.get(userId) || { config: null, metrics: { chats: 0, whatsapp: 0 } };
-  return { config: state.config, metrics: state.metrics, leads: mem.leads.get(userId) || [], persistence: 'memory' };
+  return { config: state.config, metrics: state.metrics, leads: mem.leads.get(userId) || [], orders: mem.orders.get(userId) || [], persistence: 'memory' };
 }
 async function saveState(userId, body) {
   const config = body.config || null;
@@ -451,6 +481,21 @@ function publicConfig(user, config) {
   return {
     botId: user.id,
     businessName: config.businessName || user.business_name || user.businessName || 'Atendimento',
+    template: config.template || 'custom',
+    delivery: config.delivery && typeof config.delivery === 'object' ? {
+      enabled: !!config.delivery.enabled,
+      open: String(config.delivery.open || '11:00').slice(0,5),
+      close: String(config.delivery.close || '14:00').slice(0,5),
+      deliveryFee: Math.max(0, Number(config.delivery.deliveryFee || 0)),
+      minimumOrder: Math.max(0, Number(config.delivery.minimumOrder || 0)),
+      catalog: Array.isArray(config.delivery.catalog) ? config.delivery.catalog.slice(0,40).map((p,i)=>({
+        id: String(p.id || ('item-'+i)).slice(0,80),
+        name: String(p.name || 'Item').slice(0,120),
+        description: String(p.description || '').slice(0,240),
+        price: Math.max(0, Number(p.price || 0)),
+        available: p.available !== false
+      })) : []
+    } : { enabled:false, open:'11:00', close:'14:00', deliveryFee:0, minimumOrder:0, catalog:[] },
     greeting: config.greeting || 'Olá! Como posso ajudar você hoje?',
     fallback: config.fallback || 'Posso ajudar com informações, valores, horários, orçamento ou atendimento humano.',
     mainService: config.mainService || 'Atendimento',
@@ -569,6 +614,92 @@ async function maybeCaptureLead(userId, conversationId, message, history, cfg) {
   }
   return null;
 }
+
+function publicOrder(row) {
+  return {
+    id: row.id, code: row.code, customerName: row.customer_name || row.customerName,
+    phone: row.phone, fulfillment: row.fulfillment, address: row.address || {},
+    items: row.items || [], subtotal: Number(row.subtotal || 0),
+    deliveryFee: Number(row.delivery_fee ?? row.deliveryFee ?? 0), total: Number(row.total || 0),
+    status: row.status || 'new', paymentStatus: row.payment_status || row.paymentStatus || 'pending',
+    notes: row.notes || '', date: row.created_at ? new Date(row.created_at).toLocaleString('pt-BR') : (row.date || new Date().toLocaleString('pt-BR'))
+  };
+}
+function orderCode() {
+  return 'P' + Date.now().toString().slice(-6) + crypto.randomBytes(1).toString('hex').toUpperCase();
+}
+async function createPublicOrder(userId, cfg, body) {
+  const delivery = cfg.delivery || {};
+  if (!delivery.enabled) throw new Error('Pedidos online não estão habilitados para este negócio.');
+  const catalog = Array.isArray(delivery.catalog) ? delivery.catalog.filter(x => x.available !== false) : [];
+  const byId = new Map(catalog.map(x => [String(x.id), x]));
+  const requested = Array.isArray(body.items) ? body.items.slice(0,20) : [];
+  const items = [];
+  let subtotal = 0;
+  for (const it of requested) {
+    const product = byId.get(String(it.id || ''));
+    const qty = Math.max(1, Math.min(20, Math.floor(Number(it.qty || 1))));
+    if (!product || !Number.isFinite(qty)) continue;
+    const price = Math.max(0, Number(product.price || 0));
+    items.push({ id:String(product.id), name:String(product.name), qty, price, total:Number((price*qty).toFixed(2)) });
+    subtotal += price * qty;
+  }
+  subtotal = Number(subtotal.toFixed(2));
+  if (!items.length) throw new Error('Escolha pelo menos um item.');
+  if (subtotal < Number(delivery.minimumOrder || 0)) throw new Error('O pedido mínimo ainda não foi atingido.');
+  const fulfillment = body.fulfillment === 'pickup' ? 'pickup' : 'delivery';
+  const address = fulfillment === 'delivery' && body.address && typeof body.address === 'object' ? {
+    cep:String(body.address.cep||'').slice(0,12),
+    street:String(body.address.street||'').slice(0,160),
+    number:String(body.address.number||'').slice(0,30),
+    neighborhood:String(body.address.neighborhood||'').slice(0,100),
+    city:String(body.address.city||'').slice(0,100),
+    complement:String(body.address.complement||'').slice(0,120),
+    reference:String(body.address.reference||'').slice(0,160)
+  } : {};
+  if (fulfillment === 'delivery' && (!address.street || !address.number || !address.neighborhood)) {
+    throw new Error('Preencha rua, número e bairro para entrega.');
+  }
+  const customerName = String(body.customerName || '').trim().slice(0,120);
+  const phone = String(body.phone || '').replace(/\D/g,'').slice(0,15);
+  if (!customerName) throw new Error('Informe seu nome.');
+  if (phone.length < 10) throw new Error('Informe um WhatsApp válido com DDD.');
+  const deliveryFee = fulfillment === 'delivery' ? Math.max(0, Number(delivery.deliveryFee || 0)) : 0;
+  const total = Number((subtotal + deliveryFee).toFixed(2));
+  const row = {
+    id:safeId(), code:orderCode(), customer_name:customerName, phone, fulfillment, address, items,
+    subtotal, delivery_fee:deliveryFee, total, status:'new', payment_status:'pending',
+    notes:String(body.notes||'').slice(0,500), created_at:new Date()
+  };
+  if (pool) {
+    await pool.query(
+      'INSERT INTO orders(id,user_id,code,customer_name,phone,fulfillment,address,items,subtotal,delivery_fee,total,status,payment_status,notes) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)',
+      [row.id,userId,row.code,row.customer_name,row.phone,row.fulfillment,JSON.stringify(row.address),JSON.stringify(row.items),row.subtotal,row.delivery_fee,row.total,row.status,row.payment_status,row.notes]
+    );
+  } else {
+    const arr = mem.orders.get(userId) || []; arr.unshift(publicOrder(row)); mem.orders.set(userId, arr);
+  }
+  return publicOrder(row);
+}
+async function updateOrder(userId, id, patch) {
+  const allowed = ['new','accepted','preparing','ready','out_for_delivery','completed','cancelled'];
+  const payAllowed = ['pending','paid','refunded'];
+  if (pool) {
+    const r = await pool.query('SELECT * FROM orders WHERE id=$1 AND user_id=$2', [id,userId]);
+    if (!r.rowCount) return null;
+    const cur = r.rows[0];
+    const status = allowed.includes(patch.status) ? patch.status : cur.status;
+    const paymentStatus = payAllowed.includes(patch.paymentStatus) ? patch.paymentStatus : cur.payment_status;
+    await pool.query('UPDATE orders SET status=$1,payment_status=$2,updated_at=NOW() WHERE id=$3 AND user_id=$4',[status,paymentStatus,id,userId]);
+    return publicOrder({...cur,status,payment_status:paymentStatus});
+  }
+  const arr = mem.orders.get(userId) || [];
+  const o = arr.find(x=>x.id===id); if(!o)return null;
+  if(allowed.includes(patch.status))o.status=patch.status;
+  if(payAllowed.includes(patch.paymentStatus))o.paymentStatus=patch.paymentStatus;
+  return o;
+}
+
 async function getInsights(userId) {
   if (!pool) return { conversations:0, messages:0, hot:0, intents:[], gaps:[] };
   const [summary, intents, gaps] = await Promise.all([
@@ -614,6 +745,21 @@ async function handleApi(req, res, urlPath) {
     if (!user) return json(res, 404, { error: 'Chatbot não encontrado.' });
     const cfg = await getBotConfig(user.id);
     return json(res, 200, { bot: publicConfig(user, cfg) });
+  }
+
+  const publicOrderMatch = urlPath.match(/^\/api\/public\/bot\/([^/]+)\/orders$/);
+  if (publicOrderMatch && req.method === 'POST') {
+    const user = await findUserById(publicOrderMatch[1]);
+    if (!user) return json(res, 404, { error: 'Chatbot não encontrado.' });
+    if (!allowPublicMessage(req, user.id)) return json(res, 429, { error: 'Muitas solicitações em pouco tempo. Tente novamente em instantes.' });
+    try {
+      const body = await parseBody(req);
+      const cfg = publicConfig(user, await getBotConfig(user.id));
+      const order = await createPublicOrder(user.id, cfg, body);
+      return json(res, 201, { order });
+    } catch (e) {
+      return json(res, 400, { error: e.message || 'Não foi possível criar o pedido.' });
+    }
   }
 
   const publicMessageMatch = urlPath.match(/^\/api\/public\/bot\/([^/]+)\/message$/);
@@ -722,6 +868,17 @@ async function handleApi(req, res, urlPath) {
     await saveState(auth.sub, body);
     return json(res, 200, { ok: true });
   }
+  if (req.method === 'GET' && urlPath === '/api/orders') {
+    const state = await getState(auth.sub);
+    return json(res, 200, { orders: state.orders || [] });
+  }
+  const orderMatch = urlPath.match(/^\/api\/orders\/([^/]+)$/);
+  if (orderMatch && req.method === 'PATCH') {
+    const body = await parseBody(req);
+    const order = await updateOrder(auth.sub, orderMatch[1], body);
+    return order ? json(res, 200, { order }) : json(res, 404, { error: 'Pedido não encontrado.' });
+  }
+
   if (req.method === 'POST' && urlPath === '/api/leads') {
     const body = await parseBody(req);
     return json(res, 201, { lead: await addLead(auth.sub, body) });
