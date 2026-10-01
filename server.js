@@ -43,7 +43,8 @@ const mem = {
   leads: new Map(),
   orders: new Map(),
   appointments: new Map(),
-  pushSubs: new Map()
+  pushSubs: new Map(),
+  tasks: new Map()
 };
 const publicRate = new Map();
 
@@ -68,6 +69,7 @@ function seedDemo() {
   mem.orders.set(id, []);
   mem.appointments.set(id, []);
   mem.pushSubs.set(id, []);
+  mem.tasks.set(id, []);
 }
 seedDemo();
 
@@ -177,6 +179,20 @@ async function initDb() {
       UNIQUE(user_id, endpoint)
     );
     CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id);
+    CREATE TABLE IF NOT EXISTS operational_tasks (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      details TEXT,
+      priority TEXT NOT NULL DEFAULT 'normal',
+      status TEXT NOT NULL DEFAULT 'open',
+      due_at TIMESTAMPTZ,
+      linked_type TEXT,
+      linked_id TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_operational_tasks_user_status ON operational_tasks(user_id,status,created_at DESC);
   `);
   const demo = await pool.query('SELECT id FROM users WHERE email=$1', ['cliente@demo.com']);
   if (!demo.rowCount) {
@@ -276,6 +292,7 @@ async function createUser({ email, password, businessName }) {
   mem.orders.set(id, []);
   mem.appointments.set(id, []);
   mem.pushSubs.set(id, []);
+  mem.tasks.set(id, []);
   return user;
 }
 function normalizeUser(user) {
@@ -763,7 +780,14 @@ async function createPublicOrder(userId, cfg, body) {
   } else {
     const arr = mem.orders.get(userId) || []; arr.unshift(publicOrder(row)); mem.orders.set(userId, arr);
   }
-  return publicOrder(row);
+  const order=publicOrder(row);
+  notifyUser(userId,{
+    title:'🛎️ Novo pedido',
+    body:order.customerName+' • '+order.code+' • '+Number(order.total||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}),
+    url:'/?view=orders',
+    tag:'order-'+order.id
+  }).catch(()=>{});
+  return order;
 }
 async function updateOrder(userId, id, patch) {
   const allowed = ['new','accepted','preparing','ready','out_for_delivery','completed','cancelled'];
@@ -977,6 +1001,95 @@ async function notifyUser(userId,payload) {
   return {sent,configured:true};
 }
 
+
+function taskPublic(row){
+  return {
+    id:row.id,
+    title:row.title,
+    details:row.details||'',
+    priority:row.priority||'normal',
+    status:row.status||'open',
+    dueAt:row.due_at||row.dueAt||null,
+    linkedType:row.linked_type||row.linkedType||'',
+    linkedId:row.linked_id||row.linkedId||'',
+    createdAt:row.created_at||row.createdAt||new Date().toISOString()
+  };
+}
+async function listTasks(userId){
+  if(pool){
+    const r=await pool.query("SELECT * FROM operational_tasks WHERE user_id=$1 ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END, COALESCE(due_at,'2999-12-31'::timestamptz), created_at DESC LIMIT 200",[userId]);
+    return r.rows.map(taskPublic);
+  }
+  return mem.tasks.get(userId)||[];
+}
+async function createTask(userId,body){
+  const title=String(body.title||'').trim().slice(0,180);
+  if(!title)throw new Error('Informe o título da tarefa.');
+  const priority=['low','normal','high','urgent'].includes(body.priority)?body.priority:'normal';
+  const row={id:safeId(),title,details:String(body.details||'').slice(0,1000),priority,status:'open',due_at:body.dueAt?new Date(body.dueAt).toISOString():null,linked_type:String(body.linkedType||'').slice(0,40),linked_id:String(body.linkedId||'').slice(0,120),created_at:new Date().toISOString()};
+  if(pool){
+    await pool.query('INSERT INTO operational_tasks(id,user_id,title,details,priority,status,due_at,linked_type,linked_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',[row.id,userId,row.title,row.details,row.priority,row.status,row.due_at,row.linked_type,row.linked_id]);
+  }else{
+    const arr=mem.tasks.get(userId)||[];arr.unshift(taskPublic(row));mem.tasks.set(userId,arr);
+  }
+  return taskPublic(row);
+}
+async function updateTask(userId,id,patch){
+  const statuses=['open','done','cancelled'];
+  const priorities=['low','normal','high','urgent'];
+  if(pool){
+    const r=await pool.query('SELECT * FROM operational_tasks WHERE id=$1 AND user_id=$2',[id,userId]);
+    if(!r.rowCount)return null;
+    const cur=r.rows[0];
+    const status=statuses.includes(patch.status)?patch.status:cur.status;
+    const priority=priorities.includes(patch.priority)?patch.priority:cur.priority;
+    await pool.query('UPDATE operational_tasks SET status=$1,priority=$2,updated_at=NOW() WHERE id=$3 AND user_id=$4',[status,priority,id,userId]);
+    return taskPublic({...cur,status,priority});
+  }
+  const t=(mem.tasks.get(userId)||[]).find(x=>x.id===id);if(!t)return null;
+  if(statuses.includes(patch.status))t.status=patch.status;
+  if(priorities.includes(patch.priority))t.priority=patch.priority;
+  return t;
+}
+async function operationsSummary(userId){
+  if(!pool){
+    const leads=mem.leads.get(userId)||[],orders=mem.orders.get(userId)||[],appointments=mem.appointments.get(userId)||[],tasks=mem.tasks.get(userId)||[];
+    const today=new Date().toISOString().slice(0,10);
+    return {
+      counters:{
+        newLeads:leads.filter(x=>x.status==='new').length,
+        openOrders:orders.filter(x=>!['completed','cancelled'].includes(x.status)).length,
+        pendingPayments:orders.filter(x=>x.paymentStatus==='pending'&&!['cancelled'].includes(x.status)).length,
+        todayAppointments:appointments.filter(x=>x.date===today&&x.status==='confirmed').length,
+        openTasks:tasks.filter(x=>x.status==='open').length
+      },
+      orders:orders.slice(0,6),appointments:appointments.filter(x=>x.status==='confirmed').slice(0,6),leads:leads.filter(x=>x.status==='new').slice(0,6),tasks:tasks.filter(x=>x.status==='open').slice(0,8)
+    };
+  }
+  const [counts,orders,appts,leads,tasks]=await Promise.all([
+    pool.query(`
+      SELECT
+        (SELECT COUNT(*)::int FROM leads WHERE user_id=$1 AND status='new') new_leads,
+        (SELECT COUNT(*)::int FROM orders WHERE user_id=$1 AND status NOT IN ('completed','cancelled')) open_orders,
+        (SELECT COUNT(*)::int FROM orders WHERE user_id=$1 AND payment_status='pending' AND status<>'cancelled') pending_payments,
+        (SELECT COUNT(*)::int FROM appointments WHERE user_id=$1 AND appointment_date=CURRENT_DATE AND status='confirmed') today_appointments,
+        (SELECT COUNT(*)::int FROM operational_tasks WHERE user_id=$1 AND status='open') open_tasks
+    `,[userId]),
+    pool.query("SELECT * FROM orders WHERE user_id=$1 AND status NOT IN ('completed','cancelled') ORDER BY created_at DESC LIMIT 6",[userId]),
+    pool.query("SELECT * FROM appointments WHERE user_id=$1 AND status='confirmed' AND appointment_date>=CURRENT_DATE ORDER BY appointment_date,start_time LIMIT 6",[userId]),
+    pool.query("SELECT id,name,phone,interest,status,value,created_at FROM leads WHERE user_id=$1 AND status='new' ORDER BY created_at DESC LIMIT 6",[userId]),
+    pool.query("SELECT * FROM operational_tasks WHERE user_id=$1 AND status='open' ORDER BY CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,COALESCE(due_at,'2999-12-31'::timestamptz),created_at DESC LIMIT 8",[userId])
+  ]);
+  const x=counts.rows[0]||{};
+  return {
+    counters:{newLeads:Number(x.new_leads||0),openOrders:Number(x.open_orders||0),pendingPayments:Number(x.pending_payments||0),todayAppointments:Number(x.today_appointments||0),openTasks:Number(x.open_tasks||0)},
+    orders:orders.rows.map(publicOrder),
+    appointments:appts.rows.map(appointmentPublic),
+    leads:leads.rows.map(x=>({id:x.id,name:x.name,phone:x.phone,interest:x.interest,status:x.status,value:Number(x.value||0),date:new Date(x.created_at).toLocaleString('pt-BR')})),
+    tasks:tasks.rows.map(taskPublic)
+  };
+}
+
 async function getInsights(userId) {
   if (!pool) return { conversations:0, messages:0, hot:0, intents:[], gaps:[] };
   const [summary, intents, gaps] = await Promise.all([
@@ -1165,6 +1278,26 @@ async function handleApi(req, res, urlPath) {
     const body=await parseBody(req);
     const appointment=await updateAppointment(auth.sub,appointmentMatch[1],body);
     return appointment?json(res,200,{appointment}):json(res,404,{error:'Agendamento não encontrado.'});
+  }
+
+
+  if (req.method === 'GET' && urlPath === '/api/operations/summary') {
+    return json(res,200,await operationsSummary(auth.sub));
+  }
+  if (req.method === 'GET' && urlPath === '/api/tasks') {
+    return json(res,200,{tasks:await listTasks(auth.sub)});
+  }
+  if (req.method === 'POST' && urlPath === '/api/tasks') {
+    try{
+      const body=await parseBody(req);
+      return json(res,201,{task:await createTask(auth.sub,body)});
+    }catch(e){return json(res,400,{error:e.message||'Não foi possível criar a tarefa.'});}
+  }
+  const taskMatch=urlPath.match(/^\/api\/tasks\/([^/]+)$/);
+  if (taskMatch && req.method === 'PATCH') {
+    const body=await parseBody(req);
+    const task=await updateTask(auth.sub,taskMatch[1],body);
+    return task?json(res,200,{task}):json(res,404,{error:'Tarefa não encontrada.'});
   }
 
   if (req.method === 'GET' && urlPath === '/api/me') {
