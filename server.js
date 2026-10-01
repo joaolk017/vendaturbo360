@@ -382,6 +382,26 @@ function parseBody(req) {
 function b64url(input) {
   return Buffer.from(input).toString('base64url');
 }
+const ENC_KEY=crypto.createHash('sha256').update(String(SESSION_SECRET)).digest();
+function encryptSecret(value){
+  if(!value)return '';
+  const iv=crypto.randomBytes(12),cipher=crypto.createCipheriv('aes-256-gcm',ENC_KEY,iv);
+  const encrypted=Buffer.concat([cipher.update(String(value),'utf8'),cipher.final()]),tag=cipher.getAuthTag();
+  return [iv,tag,encrypted].map(x=>x.toString('base64url')).join('.');
+}
+function decryptSecret(value){
+  if(!value)return '';
+  try{
+    const [ivB,tagB,dataB]=String(value).split('.');const decipher=crypto.createDecipheriv('aes-256-gcm',ENC_KEY,Buffer.from(ivB,'base64url'));
+    decipher.setAuthTag(Buffer.from(tagB,'base64url'));
+    return Buffer.concat([decipher.update(Buffer.from(dataB,'base64url')),decipher.final()]).toString('utf8');
+  }catch{return ''}
+}
+function safeEqualText(a,b){
+  const aa=Buffer.from(String(a||'')),bb=Buffer.from(String(b||''));
+  if(aa.length!==bb.length)return false;
+  try{return crypto.timingSafeEqual(aa,bb)}catch{return false}
+}
 function signToken(user) {
   const payload = b64url(JSON.stringify({
     sub: user.id,
@@ -1427,6 +1447,109 @@ async function updateFinanceEntry360(userId,id,body){
 function pixField(id,value){value=String(value);return id+String(value.length).padStart(2,'0')+value}
 function pixAscii(s,max){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9 .\-]/g,'').toUpperCase().slice(0,max)}
 function pixCrc(str){let crc=0xFFFF;for(let i=0;i<str.length;i++){crc^=str.charCodeAt(i)<<8;for(let j=0;j<8;j++)crc=(crc&0x8000)?((crc<<1)^0x1021):(crc<<1);crc&=0xFFFF}return crc.toString(16).toUpperCase().padStart(4,'0')}
+
+async function getPaymentIntegration360(userId){
+  if(!pool)return null;
+  const r=await pool.query('SELECT * FROM payment_integrations WHERE user_id=$1',[userId]);
+  return r.rows[0]||null;
+}
+async function paymentIntegrationPublic360(userId,req){
+  const x=await getPaymentIntegration360(userId);
+  const proto=String(req.headers['x-forwarded-proto']||'https').split(',')[0],host=req.headers.host||'atendebot360.onrender.com';
+  return {
+    provider:x?.provider||'woovi',
+    active:!!x?.active,
+    configured:!!(x?.app_id_encrypted&&x?.webhook_secret_encrypted),
+    webhookRegistered:!!x?.webhook_registered,
+    appIdMasked:x?.app_id_encrypted?'••••••••••••':'',
+    webhookUrl:proto+'://'+host+'/api/webhooks/woovi/'+encodeURIComponent(userId)
+  };
+}
+async function registerWooviWebhook360(appId,secret,url){
+  const r=await fetch('https://api.woovi.com/api/v1/webhook',{
+    method:'POST',
+    headers:{'Authorization':appId,'Content-Type':'application/json'},
+    body:JSON.stringify({webhook:{name:'AtendeBot 360 - Pix pago',event:'OPENPIX:CHARGE_COMPLETED',url,authorization:secret,isActive:true}})
+  });
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data?.error||data?.message||'Não foi possível registrar o webhook na Woovi.');
+  return data;
+}
+async function savePaymentIntegration360(userId,body,req){
+  if(!pool)throw new Error('Integração automática exige PostgreSQL.');
+  const provider=body.provider==='woovi'?'woovi':'woovi';
+  const current=await getPaymentIntegration360(userId);
+  const appId=String(body.appId||'').trim()||decryptSecret(current?.app_id_encrypted||'');
+  if(!appId)throw new Error('Informe o App ID da Woovi.');
+  const secret=current?.webhook_secret_encrypted?decryptSecret(current.webhook_secret_encrypted):crypto.randomBytes(24).toString('hex');
+  const proto=String(req.headers['x-forwarded-proto']||'https').split(',')[0],host=req.headers.host||'atendebot360.onrender.com';
+  const webhookUrl=proto+'://'+host+'/api/webhooks/woovi/'+encodeURIComponent(userId);
+  let registered=!!current?.webhook_registered;
+  if(!registered||String(body.appId||'').trim()){
+    await registerWooviWebhook360(appId,secret,webhookUrl);
+    registered=true;
+  }
+  await pool.query(`INSERT INTO payment_integrations(user_id,provider,app_id_encrypted,webhook_secret_encrypted,webhook_registered,active,updated_at)
+    VALUES($1,$2,$3,$4,$5,$6,NOW())
+    ON CONFLICT(user_id) DO UPDATE SET provider=EXCLUDED.provider,app_id_encrypted=EXCLUDED.app_id_encrypted,webhook_secret_encrypted=EXCLUDED.webhook_secret_encrypted,webhook_registered=EXCLUDED.webhook_registered,active=EXCLUDED.active,updated_at=NOW()`,
+    [userId,provider,encryptSecret(appId),encryptSecret(secret),registered,body.active!==false]);
+  return paymentIntegrationPublic360(userId,req);
+}
+async function createWooviCharge360(userId,{sourceType,sourceId,amount,comment,customer}){
+  if(!pool)return null;
+  const integration=await getPaymentIntegration360(userId);
+  if(!integration?.active||integration.provider!=='woovi')return null;
+  const existing=await pool.query('SELECT * FROM pix_charges WHERE user_id=$1 AND source_type=$2 AND source_id=$3',[userId,sourceType,sourceId]);
+  if(existing.rowCount){
+    const x=existing.rows[0];return {correlationID:x.correlation_id,brCode:x.br_code,status:x.status,amount:Number(x.amount||0)};
+  }
+  const appId=decryptSecret(integration.app_id_encrypted);if(!appId)return null;
+  const correlationID=('at360-'+sourceType+'-'+sourceId).slice(0,120),value=Math.max(1,Math.round(Number(amount||0)*100));
+  const payload={correlationID,value,comment:String(comment||'Cobrança AtendeBot 360').slice(0,140)};
+  if(customer?.name||customer?.phone)payload.customer={name:String(customer?.name||'Cliente').slice(0,120),phone:String(customer?.phone||'').slice(0,20)};
+  const r=await fetch('https://api.woovi.com/api/v1/charge',{method:'POST',headers:{'Authorization':appId,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data?.error||data?.message||'Não foi possível criar a cobrança Pix.');
+  const charge=data.charge||data;
+  const brCode=charge.brCode||charge.paymentLinkUrl||charge.qrCode||'';
+  await pool.query(`INSERT INTO pix_charges(id,user_id,provider,source_type,source_id,correlation_id,amount,status,br_code,provider_charge_id,provider_data)
+    VALUES($1,$2,'woovi',$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT(user_id,source_type,source_id) DO NOTHING`,
+    [safeId(),userId,sourceType,sourceId,correlationID,Number(amount||0),String(charge.status||'ACTIVE'),String(brCode||''),String(charge.identifier||charge.transactionID||''),JSON.stringify(data)]);
+  return {correlationID,brCode:String(brCode||''),status:String(charge.status||'ACTIVE'),amount:Number(amount||0)};
+}
+async function completePixSource360(userId,sourceType,sourceId){
+  if(sourceType==='order'){
+    const r=await pool.query('SELECT * FROM orders WHERE id=$1 AND user_id=$2',[sourceId,userId]);if(!r.rowCount)return null;
+    const order=await updateOrder(userId,sourceId,{paymentStatus:'paid'});
+    return {kind:'order',item:order};
+  }
+  if(sourceType==='appointment'){
+    const appt=await updateAppointment(userId,sourceId,{paymentStatus:'paid'});
+    return {kind:'appointment',item:appt};
+  }
+  return null;
+}
+async function handleWooviWebhook360(req,res,userId){
+  if(!pool)return json(res,503,{error:'Banco indisponível.'});
+  const integration=await getPaymentIntegration360(userId);
+  if(!integration?.active)return json(res,404,{error:'Integração não encontrada.'});
+  const expected=decryptSecret(integration.webhook_secret_encrypted);
+  const received=req.headers['x-openpix-authorization']||req.headers.authorization||'';
+  if(!expected||!safeEqualText(received,expected))return json(res,401,{error:'Webhook não autorizado.'});
+  const body=await parseBody(req);
+  if(body.event!=='OPENPIX:CHARGE_COMPLETED'||body.charge?.status!=='COMPLETED')return json(res,200,{ok:true,ignored:true});
+  const correlationID=String(body.charge?.correlationID||'');
+  const q=await pool.query('SELECT * FROM pix_charges WHERE user_id=$1 AND correlation_id=$2',[userId,correlationID]);
+  if(!q.rowCount)return json(res,200,{ok:true,unmatched:true});
+  const charge=q.rows[0];
+  if(charge.status!=='COMPLETED'){
+    await pool.query('UPDATE pix_charges SET status=$1,paid_at=NOW(),provider_data=$2,updated_at=NOW() WHERE id=$3',['COMPLETED',JSON.stringify(body),charge.id]);
+    const done=await completePixSource360(userId,charge.source_type,charge.source_id);
+    await notifyUser(userId,{title:'💰 PIX confirmado',body:(done?.kind==='order'?'Pedido pago automaticamente.':'Pagamento confirmado automaticamente.'),url:done?.kind==='order'?'/?view=orders':'/?view=appointments',tag:'pix-'+charge.id}).catch(()=>{});
+  }
+  return json(res,200,{ok:true});
+}
+
 async function createPixPayload360(userId,body){
   const cfg=await getBotConfig(userId),fin=cfg.finance||{},key=String(fin.pixKey||'').trim();
   if(!key)throw new Error('Cadastre uma chave PIX no Financeiro 360.');
