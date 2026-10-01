@@ -441,6 +441,16 @@ async function handleApi(req, res, urlPath) {
     const user = await findUserById(publicMessageMatch[1]);
     if (!user) return json(res, 404, { error: 'Chatbot não encontrado.' });
     const body = await parseBody(req);
+    if (pool && body.isFirst) {
+      await pool.query(`UPDATE business_state
+        SET metrics=jsonb_set(
+          COALESCE(metrics,'{}'::jsonb),
+          '{chats}',
+          to_jsonb(COALESCE((metrics->>'chats')::int,0)+1),
+          true
+        ), updated_at=NOW()
+        WHERE user_id=$1`, [user.id]);
+    }
     const cfg = publicConfig(user, await getBotConfig(user.id));
     const conversationId = String(body.conversationId || safeId()).slice(0,120);
     const message = String(body.message || '').trim().slice(0,4000);
