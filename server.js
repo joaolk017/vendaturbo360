@@ -1540,7 +1540,8 @@ async function savePaymentIntegration360(userId,body,req){
   const proto=String(req.headers['x-forwarded-proto']||'https').split(',')[0],host=req.headers.host||'atendebot360.onrender.com';
   const webhookUrl=proto+'://'+host+'/api/webhooks/woovi/'+encodeURIComponent(userId);
   let registered=!!current?.webhook_registered;
-  if(!registered||String(body.appId||'').trim()){
+  const previousAppId=decryptSecret(current?.app_id_encrypted||''),appChanged=!!String(body.appId||'').trim()&&String(body.appId||'').trim()!==previousAppId;
+  if(!registered||appChanged){
     await registerWooviWebhook360(appId,secret,webhookUrl);
     registered=true;
   }
@@ -1565,7 +1566,7 @@ async function createWooviCharge360(userId,{sourceType,sourceId,amount,comment,c
   const data=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(data?.error||data?.message||'Não foi possível criar a cobrança Pix.');
   const charge=data.charge||data;
-  const brCode=charge.brCode||charge.paymentLinkUrl||charge.qrCode||'';
+  const brCode=charge.brCode||data.brCode||charge.qrCode||'';
   await pool.query(`INSERT INTO pix_charges(id,user_id,provider,source_type,source_id,correlation_id,amount,status,br_code,provider_charge_id,provider_data)
     VALUES($1,$2,'woovi',$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT(user_id,source_type,source_id) DO NOTHING`,
     [safeId(),userId,sourceType,sourceId,correlationID,Number(amount||0),String(charge.status||'ACTIVE'),String(brCode||''),String(charge.identifier||charge.transactionID||''),JSON.stringify(data)]);
@@ -1588,7 +1589,7 @@ async function handleWooviWebhook360(req,res,userId){
   const integration=await getPaymentIntegration360(userId);
   if(!integration?.active)return json(res,404,{error:'Integração não encontrada.'});
   const expected=decryptSecret(integration.webhook_secret_encrypted);
-  const received=req.headers['x-openpix-authorization']||req.headers.authorization||'';
+  const received=String(req.headers['x-openpix-authorization']||req.headers.authorization||'').replace(/^Bearer\s+/i,'');
   if(!expected||!safeEqualText(received,expected))return json(res,401,{error:'Webhook não autorizado.'});
   const body=await parseBody(req);
   if(body.event!=='OPENPIX:CHARGE_COMPLETED'||body.charge?.status!=='COMPLETED')return json(res,200,{ok:true,ignored:true});
@@ -1681,7 +1682,7 @@ async function updateTeam360(userId,id,body){if(pool){const r=await pool.query('
 function inventoryPublic(x){return {id:x.id,name:x.name,sku:x.sku||'',category:x.category||'',quantity:Number(x.quantity||0),minQuantity:Number(x.min_quantity??x.minQuantity??0),unit:x.unit||'un',costPrice:Number(x.cost_price??x.costPrice??0),salePrice:Number(x.sale_price??x.salePrice??0),catalogItemId:x.catalog_item_id||x.catalogItemId||'',active:x.active!==false}}
 async function listInventory360(userId){if(pool){const r=await pool.query('SELECT * FROM inventory_items WHERE user_id=$1 ORDER BY active DESC,name',[userId]);return r.rows.map(inventoryPublic)}return mem.inventory.get(userId)||[]}
 async function createInventory360(userId,body){const row={id:safeId(),name:String(body.name||'').trim().slice(0,160),sku:String(body.sku||'').trim().slice(0,80),category:String(body.category||'').trim().slice(0,100),quantity:Math.max(0,Number(body.quantity||0)),minQuantity:Math.max(0,Number(body.minQuantity||0)),unit:String(body.unit||'un').slice(0,20),costPrice:Math.max(0,Number(body.costPrice||0)),salePrice:Math.max(0,Number(body.salePrice||0)),catalogItemId:String(body.catalogItemId||'').slice(0,100),active:body.active!==false};if(!row.name)throw new Error('Informe o item.');if(pool)await pool.query('INSERT INTO inventory_items(id,user_id,name,sku,category,quantity,min_quantity,unit,cost_price,sale_price,catalog_item_id,active) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',[row.id,userId,row.name,row.sku,row.category,row.quantity,row.minQuantity,row.unit,row.costPrice,row.salePrice,row.catalogItemId,row.active]);else{const a=mem.inventory.get(userId)||[];a.push(row);mem.inventory.set(userId,a)}return row}
-async function updateInventory360(userId,id,body){if(pool){const r=await pool.query('SELECT * FROM inventory_items WHERE id=$1 AND user_id=$2',[id,userId]);if(!r.rowCount)return null;const c=inventoryPublic(r.rows[0]),quantity=body.quantity==null?c.quantity:Math.max(0,Number(body.quantity||0)),minQuantity=body.minQuantity==null?c.minQuantity:Math.max(0,Number(body.minQuantity||0)),active=typeof body.active==='boolean'?body.active:c.active;await pool.query('UPDATE inventory_items SET quantity=$1,min_quantity=$2,active=$3,updated_at=NOW() WHERE id=$4 AND user_id=$5',[quantity,minQuantity,active,id,userId]);return {...c,quantity,minQuantity,active}}const x=(mem.inventory.get(userId)||[]).find(y=>y.id===id);if(!x)return null;if(body.quantity!=null)x.quantity=Math.max(0,Number(body.quantity||0));if(body.minQuantity!=null)x.minQuantity=Math.max(0,Number(body.minQuantity||0));if(typeof body.active==='boolean')x.active=body.active;return x}
+async function updateInventory360(userId,id,body){if(pool){const r=await pool.query('SELECT * FROM inventory_items WHERE id=$1 AND user_id=$2',[id,userId]);if(!r.rowCount)return null;const c=inventoryPublic(r.rows[0]),quantity=body.quantity==null?c.quantity:Math.max(0,Number(body.quantity||0)),minQuantity=body.minQuantity==null?c.minQuantity:Math.max(0,Number(body.minQuantity||0)),active=typeof body.active==='boolean'?body.active:c.active,catalogItemId=body.catalogItemId==null?c.catalogItemId:String(body.catalogItemId||'').slice(0,100);await pool.query('UPDATE inventory_items SET quantity=$1,min_quantity=$2,active=$3,catalog_item_id=$4,updated_at=NOW() WHERE id=$5 AND user_id=$6',[quantity,minQuantity,active,catalogItemId,id,userId]);return {...c,quantity,minQuantity,active,catalogItemId}}const x=(mem.inventory.get(userId)||[]).find(y=>y.id===id);if(!x)return null;if(body.quantity!=null)x.quantity=Math.max(0,Number(body.quantity||0));if(body.minQuantity!=null)x.minQuantity=Math.max(0,Number(body.minQuantity||0));if(typeof body.active==='boolean')x.active=body.active;if(body.catalogItemId!=null)x.catalogItemId=String(body.catalogItemId||'');return x}
 
 async function getInsights(userId) {
   if (!pool) return { conversations:0, messages:0, hot:0, intents:[], gaps:[] };
