@@ -1788,6 +1788,18 @@ async function handleApi(req, res, urlPath) {
     } catch(e) { return json(res,400,{error:e.message||'Não foi possível criar o agendamento.'}); }
   }
 
+  const publicAppointmentStatusMatch=urlPath.match(/^\/api\/public\/bot\/([^/]+)\/appointments\/([^/]+)\/status$/);
+  if(publicAppointmentStatusMatch&&req.method==='GET'){
+    const botUserId=publicAppointmentStatusMatch[1],appointmentId=publicAppointmentStatusMatch[2];
+    if(pool){
+      const r=await pool.query('SELECT id,code,status,payment_status,service_price FROM appointments WHERE id=$1 AND user_id=$2',[appointmentId,botUserId]);
+      if(!r.rowCount)return json(res,404,{error:'Agendamento não encontrado.'});
+      const x=r.rows[0];return json(res,200,{id:x.id,code:x.code,status:x.status,paymentStatus:x.payment_status,total:Number(x.service_price||0)});
+    }
+    const x=(mem.appointments.get(botUserId)||[]).find(a=>a.id===appointmentId);
+    return x?json(res,200,{id:x.id,code:x.code,status:x.status,paymentStatus:x.paymentStatus,total:x.servicePrice}):json(res,404,{error:'Agendamento não encontrado.'});
+  }
+
   const publicMessageMatch = urlPath.match(/^\/api\/public\/bot\/([^/]+)\/message$/);
   if (publicMessageMatch && req.method === 'POST') {
     const user = await findUserById(publicMessageMatch[1]);
