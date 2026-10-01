@@ -44,7 +44,11 @@ const mem = {
   orders: new Map(),
   appointments: new Map(),
   pushSubs: new Map(),
-  tasks: new Map()
+  tasks: new Map(),
+  customerProfiles: new Map(),
+  finance: new Map(),
+  team: new Map(),
+  inventory: new Map()
 };
 const publicRate = new Map();
 
@@ -70,6 +74,10 @@ function seedDemo() {
   mem.appointments.set(id, []);
   mem.pushSubs.set(id, []);
   mem.tasks.set(id, []);
+  mem.customerProfiles.set(id, new Map());
+  mem.finance.set(id, []);
+  mem.team.set(id, []);
+  mem.inventory.set(id, []);
 }
 seedDemo();
 
@@ -193,6 +201,88 @@ async function initDb() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_operational_tasks_user_status ON operational_tasks(user_id,status,created_at DESC);
+
+    ALTER TABLE appointments ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'pending';
+
+    CREATE TABLE IF NOT EXISTS customer_profiles (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      phone TEXT NOT NULL,
+      name TEXT,
+      email TEXT,
+      tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(user_id,phone)
+    );
+    CREATE INDEX IF NOT EXISTS idx_customer_profiles_user ON customer_profiles(user_id);
+
+    CREATE TABLE IF NOT EXISTS financial_entries (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'other',
+      description TEXT NOT NULL,
+      amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'pending',
+      method TEXT NOT NULL DEFAULT 'other',
+      source_type TEXT,
+      source_id TEXT,
+      due_at TIMESTAMPTZ,
+      paid_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_financial_entries_user_date ON financial_entries(user_id,created_at DESC);
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_financial_source ON financial_entries(user_id,source_type,source_id) WHERE source_type IS NOT NULL AND source_id IS NOT NULL;
+
+    CREATE TABLE IF NOT EXISTS team_members (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'Atendimento',
+      phone TEXT,
+      email TEXT,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id,active);
+
+    CREATE TABLE IF NOT EXISTS inventory_items (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      sku TEXT,
+      category TEXT,
+      quantity NUMERIC(12,3) NOT NULL DEFAULT 0,
+      min_quantity NUMERIC(12,3) NOT NULL DEFAULT 0,
+      unit TEXT NOT NULL DEFAULT 'un',
+      cost_price NUMERIC(12,2) NOT NULL DEFAULT 0,
+      sale_price NUMERIC(12,2) NOT NULL DEFAULT 0,
+      catalog_item_id TEXT,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_inventory_items_user ON inventory_items(user_id,active);
+
+    INSERT INTO financial_entries(id,user_id,type,category,description,amount,status,method,source_type,source_id,paid_at,created_at)
+      SELECT 'order-'||id,user_id,'income','order','Pedido '||code,total,
+        CASE WHEN payment_status='paid' THEN 'paid' ELSE 'pending' END,
+        CASE WHEN payment_status='paid' THEN 'pix' ELSE 'other' END,
+        'order',id,CASE WHEN payment_status='paid' THEN updated_at ELSE NULL END,created_at
+      FROM orders WHERE total>0
+      ON CONFLICT DO NOTHING;
+
+    INSERT INTO financial_entries(id,user_id,type,category,description,amount,status,method,source_type,source_id,paid_at,created_at)
+      SELECT 'appointment-'||id,user_id,'income','appointment','Agendamento '||code,service_price,
+        CASE WHEN payment_status='paid' THEN 'paid' ELSE 'pending' END,
+        CASE WHEN payment_status='paid' THEN 'pix' ELSE 'other' END,
+        'appointment',id,CASE WHEN payment_status='paid' THEN updated_at ELSE NULL END,created_at
+      FROM appointments WHERE service_price>0
+      ON CONFLICT DO NOTHING;
   `);
   const demo = await pool.query('SELECT id FROM users WHERE email=$1', ['cliente@demo.com']);
   if (!demo.rowCount) {
@@ -293,6 +383,10 @@ async function createUser({ email, password, businessName }) {
   mem.appointments.set(id, []);
   mem.pushSubs.set(id, []);
   mem.tasks.set(id, []);
+  mem.customerProfiles.set(id, new Map());
+  mem.finance.set(id, []);
+  mem.team.set(id, []);
+  mem.inventory.set(id, []);
   return user;
 }
 function normalizeUser(user) {
@@ -777,6 +871,11 @@ async function createPublicOrder(userId, cfg, body) {
       'INSERT INTO orders(id,user_id,code,customer_name,phone,fulfillment,address,items,subtotal,delivery_fee,total,status,payment_status,notes) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)',
       [row.id,userId,row.code,row.customer_name,row.phone,row.fulfillment,JSON.stringify(row.address),JSON.stringify(row.items),row.subtotal,row.delivery_fee,row.total,row.status,row.payment_status,row.notes]
     );
+    if(row.total>0){
+      await pool.query(`INSERT INTO financial_entries(id,user_id,type,category,description,amount,status,method,source_type,source_id,created_at)
+        VALUES($1,$2,'income','order',$3,$4,'pending','other','order',$5,NOW()) ON CONFLICT DO NOTHING`,
+        ['order-'+row.id,userId,'Pedido '+row.code,row.total,row.id]);
+    }
   } else {
     const arr = mem.orders.get(userId) || []; arr.unshift(publicOrder(row)); mem.orders.set(userId, arr);
   }
@@ -799,6 +898,8 @@ async function updateOrder(userId, id, patch) {
     const status = allowed.includes(patch.status) ? patch.status : cur.status;
     const paymentStatus = payAllowed.includes(patch.paymentStatus) ? patch.paymentStatus : cur.payment_status;
     await pool.query('UPDATE orders SET status=$1,payment_status=$2,updated_at=NOW() WHERE id=$3 AND user_id=$4',[status,paymentStatus,id,userId]);
+    await pool.query(`UPDATE financial_entries SET status=$1,paid_at=CASE WHEN $1='paid' THEN COALESCE(paid_at,NOW()) ELSE paid_at END,updated_at=NOW()
+      WHERE user_id=$2 AND source_type='order' AND source_id=$3`,[paymentStatus,userId,id]);
     return publicOrder({...cur,status,payment_status:paymentStatus});
   }
   const arr = mem.orders.get(userId) || [];
@@ -827,6 +928,7 @@ function appointmentPublic(row) {
     time: String(row.start_time || row.time || '').slice(0,5),
     duration: Number(row.duration_minutes ?? row.duration ?? 30),
     status: row.status || 'confirmed',
+    paymentStatus: row.payment_status || row.paymentStatus || 'pending',
     notes: row.notes || '',
     createdAt: row.created_at || row.createdAt || new Date().toISOString()
   };
@@ -916,13 +1018,18 @@ async function createAppointment(userId,cfg,body) {
     professional_id:professional.id,professional_name:professional.name,
     service_id:service.id,service_name:service.name,service_price:service.price,
     appointment_date:date,start_time:time,duration_minutes:service.duration,
-    status:'confirmed',notes:String(body.notes||'').slice(0,500),created_at:new Date().toISOString()
+    status:'confirmed',payment_status:'pending',notes:String(body.notes||'').slice(0,500),created_at:new Date().toISOString()
   };
   if(pool){
     try{
-      await pool.query(`INSERT INTO appointments(id,user_id,code,customer_name,phone,professional_id,professional_name,service_id,service_name,service_price,appointment_date,start_time,duration_minutes,status,notes)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
-        [row.id,userId,row.code,row.customer_name,row.phone,row.professional_id,row.professional_name,row.service_id,row.service_name,row.service_price,row.appointment_date,row.start_time,row.duration_minutes,row.status,row.notes]);
+      await pool.query(`INSERT INTO appointments(id,user_id,code,customer_name,phone,professional_id,professional_name,service_id,service_name,service_price,appointment_date,start_time,duration_minutes,status,payment_status,notes)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+        [row.id,userId,row.code,row.customer_name,row.phone,row.professional_id,row.professional_name,row.service_id,row.service_name,row.service_price,row.appointment_date,row.start_time,row.duration_minutes,row.status,row.payment_status,row.notes]);
+      if(Number(row.service_price)>0){
+        await pool.query(`INSERT INTO financial_entries(id,user_id,type,category,description,amount,status,method,source_type,source_id,created_at)
+          VALUES($1,$2,'income','appointment',$3,$4,'pending','other','appointment',$5,NOW()) ON CONFLICT DO NOTHING`,
+          ['appointment-'+row.id,userId,'Agendamento '+row.code,row.service_price,row.id]);
+      }
     }catch(e){
       if(e.code==='23505')throw new Error('Este horário acabou de ser reservado. Escolha outro.');
       throw e;
@@ -955,12 +1062,18 @@ async function updateAppointment(userId,id,patch) {
     if(!r.rowCount)return null;
     const cur=r.rows[0];
     const status=allowed.includes(patch.status)?patch.status:cur.status;
-    await pool.query('UPDATE appointments SET status=$1,updated_at=NOW() WHERE id=$2 AND user_id=$3',[status,id,userId]);
-    return appointmentPublic({...cur,status});
+    const paymentStatus=['pending','paid','refunded'].includes(patch.paymentStatus)?patch.paymentStatus:cur.payment_status;
+    await pool.query('UPDATE appointments SET status=$1,payment_status=$2,updated_at=NOW() WHERE id=$3 AND user_id=$4',[status,paymentStatus,id,userId]);
+    if(Number(cur.service_price||0)>0){
+      await pool.query(`UPDATE financial_entries SET status=$1,paid_at=CASE WHEN $1='paid' THEN COALESCE(paid_at,NOW()) ELSE paid_at END,updated_at=NOW()
+        WHERE user_id=$2 AND source_type='appointment' AND source_id=$3`,[paymentStatus,userId,id]);
+    }
+    return appointmentPublic({...cur,status,payment_status:paymentStatus});
   }
   const a=(mem.appointments.get(userId)||[]).find(x=>x.id===id);
   if(!a)return null;
   if(allowed.includes(patch.status))a.status=patch.status;
+  if(['pending','paid','refunded'].includes(patch.paymentStatus))a.paymentStatus=patch.paymentStatus;
   return a;
 }
 function pushReady(){
@@ -1089,6 +1202,138 @@ async function operationsSummary(userId){
     tasks:tasks.rows.map(taskPublic)
   };
 }
+
+
+function cleanPhone(v){return String(v||'').replace(/\D/g,'').slice(0,15)}
+async function listCustomers360(userId){
+  if(!pool){
+    const map=new Map(),put=(phone,name,type,value=0,date=new Date().toISOString())=>{
+      phone=cleanPhone(phone);if(!phone)return;
+      const x=map.get(phone)||{phone,name:name||'Cliente',interactions:0,orders:0,appointments:0,leads:0,totalSpent:0,lastSeen:date,email:'',tags:[],notes:''};
+      x.name=name||x.name;x.interactions++;x[type]++;x.totalSpent+=Number(value||0);if(String(date)>String(x.lastSeen))x.lastSeen=date;map.set(phone,x);
+    };
+    (mem.orders.get(userId)||[]).forEach(o=>put(o.phone,o.customerName,'orders',o.paymentStatus==='paid'?o.total:0,o.date));
+    (mem.appointments.get(userId)||[]).forEach(a=>put(a.phone,a.customerName,'appointments',a.paymentStatus==='paid'?a.servicePrice:0,a.createdAt));
+    (mem.leads.get(userId)||[]).forEach(l=>put(l.phone,l.name,'leads',0,l.date));
+    const profiles=mem.customerProfiles.get(userId)||new Map();
+    return [...map.values()].map(x=>({...x,...(profiles.get(x.phone)||{})})).sort((a,b)=>String(b.lastSeen).localeCompare(String(a.lastSeen)));
+  }
+  const r=await pool.query(`
+    WITH base AS (
+      SELECT regexp_replace(phone,'\\D','','g') phone,customer_name name,created_at seen,'order' kind,
+        CASE WHEN payment_status='paid' THEN total ELSE 0 END paid_value FROM orders WHERE user_id=$1
+      UNION ALL
+      SELECT regexp_replace(phone,'\\D','','g'),customer_name,created_at,'appointment',
+        CASE WHEN payment_status='paid' THEN service_price ELSE 0 END FROM appointments WHERE user_id=$1
+      UNION ALL
+      SELECT regexp_replace(phone,'\\D','','g'),name,created_at,'lead',0 FROM leads WHERE user_id=$1
+    ), agg AS (
+      SELECT phone,(array_agg(name ORDER BY seen DESC))[1] latest_name,MAX(seen) last_seen,COUNT(*)::int interactions,
+        COUNT(*) FILTER(WHERE kind='order')::int orders,
+        COUNT(*) FILTER(WHERE kind='appointment')::int appointments,
+        COUNT(*) FILTER(WHERE kind='lead')::int leads,
+        COALESCE(SUM(paid_value),0) total_spent
+      FROM base WHERE phone<>'' GROUP BY phone
+    )
+    SELECT a.phone,COALESCE(NULLIF(p.name,''),a.latest_name,'Cliente') name,p.email,p.tags,p.notes,
+      a.last_seen,a.interactions,a.orders,a.appointments,a.leads,a.total_spent
+    FROM agg a LEFT JOIN customer_profiles p ON p.user_id=$1 AND p.phone=a.phone
+    ORDER BY a.last_seen DESC LIMIT 500
+  `,[userId]);
+  return r.rows.map(x=>({phone:x.phone,name:x.name,email:x.email||'',tags:x.tags||[],notes:x.notes||'',lastSeen:x.last_seen,interactions:Number(x.interactions||0),orders:Number(x.orders||0),appointments:Number(x.appointments||0),leads:Number(x.leads||0),totalSpent:Number(x.total_spent||0)}));
+}
+async function customerHistory360(userId,phone){
+  phone=cleanPhone(phone);if(!phone)throw new Error('Cliente inválido.');
+  if(!pool){
+    const events=[];
+    (mem.orders.get(userId)||[]).filter(x=>cleanPhone(x.phone)===phone).forEach(o=>events.push({type:'order',date:o.date,title:'Pedido '+o.code,status:o.status,value:o.total,detail:(o.items||[]).map(i=>i.qty+'x '+i.name).join(', ')}));
+    (mem.appointments.get(userId)||[]).filter(x=>cleanPhone(x.phone)===phone).forEach(a=>events.push({type:'appointment',date:a.createdAt,title:a.serviceName,status:a.status,value:a.servicePrice,detail:a.professionalName+' • '+a.date+' '+a.time}));
+    (mem.leads.get(userId)||[]).filter(x=>cleanPhone(x.phone)===phone).forEach(l=>events.push({type:'lead',date:l.date,title:l.interest,status:l.status,value:l.value||0,detail:'Lead'}));
+    return events.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  }
+  const r=await pool.query(`
+    SELECT * FROM (
+      SELECT 'order' type,created_at date,'Pedido '||code title,status,total value,COALESCE(notes,'') detail FROM orders WHERE user_id=$1 AND regexp_replace(phone,'\\D','','g')=$2
+      UNION ALL
+      SELECT 'appointment',created_at,service_name,status,service_price,professional_name||' • '||appointment_date::text||' '||start_time::text FROM appointments WHERE user_id=$1 AND regexp_replace(phone,'\\D','','g')=$2
+      UNION ALL
+      SELECT 'lead',created_at,interest,status,value,'Lead / oportunidade' FROM leads WHERE user_id=$1 AND regexp_replace(phone,'\\D','','g')=$2
+    ) x ORDER BY date DESC LIMIT 250
+  `,[userId,phone]);
+  return r.rows.map(x=>({type:x.type,date:x.date,title:x.title,status:x.status,value:Number(x.value||0),detail:x.detail||''}));
+}
+async function saveCustomerProfile360(userId,phone,body){
+  phone=cleanPhone(phone);if(!phone)throw new Error('Telefone inválido.');
+  const data={name:String(body.name||'').trim().slice(0,120),email:String(body.email||'').trim().slice(0,180),tags:Array.isArray(body.tags)?body.tags.map(x=>String(x).trim().slice(0,40)).filter(Boolean).slice(0,12):[],notes:String(body.notes||'').slice(0,2000)};
+  if(pool){
+    const id=safeId();
+    const r=await pool.query(`INSERT INTO customer_profiles(id,user_id,phone,name,email,tags,notes,updated_at)
+      VALUES($1,$2,$3,$4,$5,$6,$7,NOW())
+      ON CONFLICT(user_id,phone) DO UPDATE SET name=EXCLUDED.name,email=EXCLUDED.email,tags=EXCLUDED.tags,notes=EXCLUDED.notes,updated_at=NOW()
+      RETURNING *`,[id,userId,phone,data.name||null,data.email||null,JSON.stringify(data.tags),data.notes||null]);
+    return r.rows[0];
+  }
+  const map=mem.customerProfiles.get(userId)||new Map();map.set(phone,{phone,...data});mem.customerProfiles.set(userId,map);return {phone,...data};
+}
+
+function financeEntryPublic(x){return {id:x.id,type:x.type,category:x.category,description:x.description,amount:Number(x.amount||0),status:x.status,method:x.method,sourceType:x.source_type||x.sourceType||'',sourceId:x.source_id||x.sourceId||'',dueAt:x.due_at||x.dueAt||null,paidAt:x.paid_at||x.paidAt||null,createdAt:x.created_at||x.createdAt||new Date().toISOString()}}
+async function listFinanceEntries(userId){
+  if(pool){const r=await pool.query('SELECT * FROM financial_entries WHERE user_id=$1 ORDER BY created_at DESC LIMIT 500',[userId]);return r.rows.map(financeEntryPublic)}
+  return mem.finance.get(userId)||[];
+}
+async function financeSummary360(userId){
+  const entries=await listFinanceEntries(userId);
+  const now=new Date(),month=now.toISOString().slice(0,7);
+  const incomePaid=entries.filter(x=>x.type==='income'&&x.status==='paid').reduce((s,x)=>s+x.amount,0);
+  const expensePaid=entries.filter(x=>x.type==='expense'&&x.status==='paid').reduce((s,x)=>s+x.amount,0);
+  const pendingIncome=entries.filter(x=>x.type==='income'&&x.status==='pending').reduce((s,x)=>s+x.amount,0);
+  const monthIncome=entries.filter(x=>x.type==='income'&&x.status==='paid'&&String(x.paidAt||x.createdAt).slice(0,7)===month).reduce((s,x)=>s+x.amount,0);
+  const monthExpense=entries.filter(x=>x.type==='expense'&&x.status==='paid'&&String(x.paidAt||x.createdAt).slice(0,7)===month).reduce((s,x)=>s+x.amount,0);
+  return {incomePaid,expensePaid,balance:incomePaid-expensePaid,pendingIncome,monthIncome,monthExpense,monthBalance:monthIncome-monthExpense,entries};
+}
+async function createFinanceEntry360(userId,body){
+  const type=body.type==='expense'?'expense':'income',amount=Math.max(0,Number(body.amount||0));
+  if(!amount)throw new Error('Informe um valor maior que zero.');
+  const status=['pending','paid'].includes(body.status)?body.status:'paid',method=['pix','card','cash','transfer','other'].includes(body.method)?body.method:'other';
+  const row={id:safeId(),type,category:String(body.category||'other').slice(0,60),description:String(body.description||'Lançamento').slice(0,220),amount,status,method,sourceType:'manual',sourceId:'',dueAt:body.dueAt?new Date(body.dueAt).toISOString():null,paidAt:status==='paid'?new Date().toISOString():null,createdAt:new Date().toISOString()};
+  if(pool){
+    await pool.query('INSERT INTO financial_entries(id,user_id,type,category,description,amount,status,method,source_type,due_at,paid_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',[row.id,userId,row.type,row.category,row.description,row.amount,row.status,row.method,'manual',row.dueAt,row.paidAt]);
+  }else{const arr=mem.finance.get(userId)||[];arr.unshift(row);mem.finance.set(userId,arr)}
+  return row;
+}
+async function updateFinanceEntry360(userId,id,body){
+  if(pool){
+    const r=await pool.query('SELECT * FROM financial_entries WHERE id=$1 AND user_id=$2',[id,userId]);if(!r.rowCount)return null;
+    const cur=r.rows[0],status=['pending','paid','cancelled','refunded'].includes(body.status)?body.status:cur.status;
+    await pool.query(`UPDATE financial_entries SET status=$1,paid_at=CASE WHEN $1='paid' THEN COALESCE(paid_at,NOW()) ELSE paid_at END,updated_at=NOW() WHERE id=$2 AND user_id=$3`,[status,id,userId]);
+    return financeEntryPublic({...cur,status});
+  }
+  const x=(mem.finance.get(userId)||[]).find(y=>y.id===id);if(!x)return null;if(['pending','paid','cancelled','refunded'].includes(body.status))x.status=body.status;return x;
+}
+function pixField(id,value){value=String(value);return id+String(value.length).padStart(2,'0')+value}
+function pixAscii(s,max){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9 .\-]/g,'').toUpperCase().slice(0,max)}
+function pixCrc(str){let crc=0xFFFF;for(let i=0;i<str.length;i++){crc^=str.charCodeAt(i)<<8;for(let j=0;j<8;j++)crc=(crc&0x8000)?((crc<<1)^0x1021):(crc<<1);crc&=0xFFFF}return crc.toString(16).toUpperCase().padStart(4,'0')}
+async function createPixPayload360(userId,body){
+  const cfg=await getBotConfig(userId),fin=cfg.finance||{},key=String(fin.pixKey||'').trim();
+  if(!key)throw new Error('Cadastre uma chave PIX no Financeiro 360.');
+  const amount=Math.max(0,Number(body.amount||0)),name=pixAscii(fin.pixName||cfg.businessName||'ATENDEBOT',25),city=pixAscii(fin.pixCity||'SAO PAULO',15),txid=pixAscii(body.txid||'***',25)||'***';
+  const merchant=pixField('00','BR.GOV.BCB.PIX')+pixField('01',key);
+  let payload=pixField('00','01')+pixField('26',merchant)+pixField('52','0000')+pixField('53','986');
+  if(amount>0)payload+=pixField('54',amount.toFixed(2));
+  payload+=pixField('58','BR')+pixField('59',name)+pixField('60',city)+pixField('62',pixField('05',txid))+'6304';
+  payload+=pixCrc(payload);
+  return {payload,amount,key,name,city,manualConfirmation:true};
+}
+
+function teamPublic(x){return {id:x.id,name:x.name,role:x.role,phone:x.phone||'',email:x.email||'',active:x.active!==false,createdAt:x.created_at||x.createdAt||new Date().toISOString()}}
+async function listTeam360(userId){if(pool){const r=await pool.query('SELECT * FROM team_members WHERE user_id=$1 ORDER BY active DESC,name',[userId]);return r.rows.map(teamPublic)}return mem.team.get(userId)||[]}
+async function createTeam360(userId,body){const row={id:safeId(),name:String(body.name||'').trim().slice(0,120),role:String(body.role||'Atendimento').slice(0,100),phone:cleanPhone(body.phone),email:String(body.email||'').trim().slice(0,180),active:body.active!==false,createdAt:new Date().toISOString()};if(!row.name)throw new Error('Informe o nome.');if(pool)await pool.query('INSERT INTO team_members(id,user_id,name,role,phone,email,active) VALUES($1,$2,$3,$4,$5,$6,$7)',[row.id,userId,row.name,row.role,row.phone,row.email,row.active]);else{const a=mem.team.get(userId)||[];a.push(row);mem.team.set(userId,a)}return row}
+async function updateTeam360(userId,id,body){if(pool){const r=await pool.query('SELECT * FROM team_members WHERE id=$1 AND user_id=$2',[id,userId]);if(!r.rowCount)return null;const c=r.rows[0],active=typeof body.active==='boolean'?body.active:c.active,role=body.role!=null?String(body.role).slice(0,100):c.role;await pool.query('UPDATE team_members SET role=$1,active=$2,updated_at=NOW() WHERE id=$3 AND user_id=$4',[role,active,id,userId]);return teamPublic({...c,role,active})}const x=(mem.team.get(userId)||[]).find(y=>y.id===id);if(!x)return null;if(typeof body.active==='boolean')x.active=body.active;if(body.role!=null)x.role=String(body.role);return x}
+
+function inventoryPublic(x){return {id:x.id,name:x.name,sku:x.sku||'',category:x.category||'',quantity:Number(x.quantity||0),minQuantity:Number(x.min_quantity??x.minQuantity??0),unit:x.unit||'un',costPrice:Number(x.cost_price??x.costPrice??0),salePrice:Number(x.sale_price??x.salePrice??0),catalogItemId:x.catalog_item_id||x.catalogItemId||'',active:x.active!==false}}
+async function listInventory360(userId){if(pool){const r=await pool.query('SELECT * FROM inventory_items WHERE user_id=$1 ORDER BY active DESC,name',[userId]);return r.rows.map(inventoryPublic)}return mem.inventory.get(userId)||[]}
+async function createInventory360(userId,body){const row={id:safeId(),name:String(body.name||'').trim().slice(0,160),sku:String(body.sku||'').trim().slice(0,80),category:String(body.category||'').trim().slice(0,100),quantity:Math.max(0,Number(body.quantity||0)),minQuantity:Math.max(0,Number(body.minQuantity||0)),unit:String(body.unit||'un').slice(0,20),costPrice:Math.max(0,Number(body.costPrice||0)),salePrice:Math.max(0,Number(body.salePrice||0)),catalogItemId:String(body.catalogItemId||'').slice(0,100),active:body.active!==false};if(!row.name)throw new Error('Informe o item.');if(pool)await pool.query('INSERT INTO inventory_items(id,user_id,name,sku,category,quantity,min_quantity,unit,cost_price,sale_price,catalog_item_id,active) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',[row.id,userId,row.name,row.sku,row.category,row.quantity,row.minQuantity,row.unit,row.costPrice,row.salePrice,row.catalogItemId,row.active]);else{const a=mem.inventory.get(userId)||[];a.push(row);mem.inventory.set(userId,a)}return row}
+async function updateInventory360(userId,id,body){if(pool){const r=await pool.query('SELECT * FROM inventory_items WHERE id=$1 AND user_id=$2',[id,userId]);if(!r.rowCount)return null;const c=inventoryPublic(r.rows[0]),quantity=body.quantity==null?c.quantity:Math.max(0,Number(body.quantity||0)),minQuantity=body.minQuantity==null?c.minQuantity:Math.max(0,Number(body.minQuantity||0)),active=typeof body.active==='boolean'?body.active:c.active;await pool.query('UPDATE inventory_items SET quantity=$1,min_quantity=$2,active=$3,updated_at=NOW() WHERE id=$4 AND user_id=$5',[quantity,minQuantity,active,id,userId]);return {...c,quantity,minQuantity,active}}const x=(mem.inventory.get(userId)||[]).find(y=>y.id===id);if(!x)return null;if(body.quantity!=null)x.quantity=Math.max(0,Number(body.quantity||0));if(body.minQuantity!=null)x.minQuantity=Math.max(0,Number(body.minQuantity||0));if(typeof body.active==='boolean')x.active=body.active;return x}
 
 async function getInsights(userId) {
   if (!pool) return { conversations:0, messages:0, hot:0, intents:[], gaps:[] };
@@ -1299,6 +1544,45 @@ async function handleApi(req, res, urlPath) {
     const task=await updateTask(auth.sub,taskMatch[1],body);
     return task?json(res,200,{task}):json(res,404,{error:'Tarefa não encontrada.'});
   }
+
+
+  if (req.method === 'GET' && urlPath === '/api/customers') {
+    return json(res,200,{customers:await listCustomers360(auth.sub)});
+  }
+  const customerMatch=urlPath.match(/^\/api\/customers\/([^/]+)$/);
+  if (customerMatch && req.method === 'GET') {
+    try{return json(res,200,{history:await customerHistory360(auth.sub,decodeURIComponent(customerMatch[1]))});}
+    catch(e){return json(res,400,{error:e.message});}
+  }
+  if (customerMatch && req.method === 'PATCH') {
+    try{const body=await parseBody(req);return json(res,200,{profile:await saveCustomerProfile360(auth.sub,decodeURIComponent(customerMatch[1]),body)});}
+    catch(e){return json(res,400,{error:e.message});}
+  }
+
+  if (req.method === 'GET' && urlPath === '/api/finance/summary') {
+    return json(res,200,await financeSummary360(auth.sub));
+  }
+  if (req.method === 'POST' && urlPath === '/api/finance/entries') {
+    try{const body=await parseBody(req);return json(res,201,{entry:await createFinanceEntry360(auth.sub,body)});}catch(e){return json(res,400,{error:e.message});}
+  }
+  const financeEntryMatch=urlPath.match(/^\/api\/finance\/entries\/([^/]+)$/);
+  if(financeEntryMatch && req.method==='PATCH'){
+    const body=await parseBody(req),entry=await updateFinanceEntry360(auth.sub,financeEntryMatch[1],body);
+    return entry?json(res,200,{entry}):json(res,404,{error:'Lançamento não encontrado.'});
+  }
+  if(req.method==='POST'&&urlPath==='/api/finance/pix'){
+    try{const body=await parseBody(req);return json(res,200,await createPixPayload360(auth.sub,body));}catch(e){return json(res,400,{error:e.message});}
+  }
+
+  if(req.method==='GET'&&urlPath==='/api/team')return json(res,200,{members:await listTeam360(auth.sub)});
+  if(req.method==='POST'&&urlPath==='/api/team'){try{const body=await parseBody(req);return json(res,201,{member:await createTeam360(auth.sub,body)});}catch(e){return json(res,400,{error:e.message});}}
+  const teamMatch=urlPath.match(/^\/api\/team\/([^/]+)$/);
+  if(teamMatch&&req.method==='PATCH'){const body=await parseBody(req),member=await updateTeam360(auth.sub,teamMatch[1],body);return member?json(res,200,{member}):json(res,404,{error:'Membro não encontrado.'});}
+
+  if(req.method==='GET'&&urlPath==='/api/inventory')return json(res,200,{items:await listInventory360(auth.sub)});
+  if(req.method==='POST'&&urlPath==='/api/inventory'){try{const body=await parseBody(req);return json(res,201,{item:await createInventory360(auth.sub,body)});}catch(e){return json(res,400,{error:e.message});}}
+  const inventoryMatch=urlPath.match(/^\/api\/inventory\/([^/]+)$/);
+  if(inventoryMatch&&req.method==='PATCH'){const body=await parseBody(req),item=await updateInventory360(auth.sub,inventoryMatch[1],body);return item?json(res,200,{item}):json(res,404,{error:'Item não encontrado.'});}
 
   if (req.method === 'GET' && urlPath === '/api/me') {
     return json(res, 200, { user: normalizeUser(user), persistence: pool ? 'postgres' : 'memory' });
