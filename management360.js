@@ -44,7 +44,7 @@
   function applyVertical(){
     const stock=document.querySelector('[data-view="inventory"]');
     const t=config?.template||'barbearia';
-    const enabled=['marmitex','restaurante','acai','loja','oficina','barbearia'].includes(t);
+    const enabled=['marmitex','restaurante','acai','loja','adega','tabacaria','oficina','barbearia'].includes(t);
     if(stock)stock.style.display=enabled?'flex':'none';
   }
   function panel(title,sub,body,id=''){return '<section class="mg-panel" '+(id?'id="'+id+'"':'')+'><div class="mg-head"><div><h3>'+title+'</h3><p>'+sub+'</p></div></div><div class="mg-body">'+body+'</div></section>'}
