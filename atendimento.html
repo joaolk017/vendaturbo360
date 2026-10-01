@@ -294,7 +294,7 @@ function orderStageMessage(data,fulfillment){
     completed:fulfillment==='delivery'?'Pedido entregue. Obrigado!':'Retirada concluída. Obrigado!',
     cancelled:'Pedido cancelado. Entre em contato com o estabelecimento se precisar de ajuda.'
   };
-  const pay=data.paymentStatus==='paid'?'PIX pago ✅':data.paymentStatus==='refunded'?'Pagamento estornado':'Pagamento pendente';
+  const pay=Number(data.total||0)<=0?'Sem cobrança online':data.paymentStatus==='paid'?'PIX pago ✅':data.paymentStatus==='refunded'?'Pagamento estornado':'Pagamento pendente';
   return (stage[data.status]||'Pedido em acompanhamento.')+' • '+pay;
 }
 function trackOrder(order){
