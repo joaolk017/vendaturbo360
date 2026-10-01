@@ -99,7 +99,8 @@
   }
   function renderModules(){
     const box=document.getElementById('opsModules');if(!box)return;
-    box.innerHTML=moduleConfig().filter(x=>x.on).map(x=>'<button class="ops-module" data-module="'+esc(x.view)+'" style="width:100%;border:0;text-align:left"><div><span>'+x.icon+'</span><span><b>'+esc(x.name)+'</b><small>'+esc(x.sub)+'</small></span></div><i></i></button>').join('');
+    const perm={chatbot:'chatbot',leads:'leads',customers:'customers',finance:'finance',team:'team',inventory:'inventory',orders:'orders',menu:'orders',appointments:'appointments',growth:'growth'};
+    box.innerHTML=moduleConfig().filter(x=>x.on&&(!window.at360Can||window.at360Can(perm[x.view]||'central'))).map(x=>'<button class="ops-module" data-module="'+esc(x.view)+'" style="width:100%;border:0;text-align:left"><div><span>'+x.icon+'</span><span><b>'+esc(x.name)+'</b><small>'+esc(x.sub)+'</small></span></div><i></i></button>').join('');
     box.querySelectorAll('[data-module]').forEach(b=>b.onclick=()=>goView(b.dataset.module));
   }
   function quickButtons(){
@@ -121,9 +122,11 @@
   }
   function renderQuick(){
     const box=document.getElementById('opsQuick');if(!box)return;
-    box.innerHTML=quickButtons().map((x,i)=>'<button data-q="'+i+'"><span>'+x.icon+'</span>'+esc(x.title)+'<small>'+esc(x.sub)+'</small></button>').join('');
+    const perm={customers:'customers',finance:'finance',team:'team',inventory:'inventory',orders:'orders',menu:'orders',appointments:'appointments',growth:'growth'};
+    const buttons=quickButtons().filter(x=>!x.view||!window.at360Can||window.at360Can(perm[x.view]||'central'));
+    box.innerHTML=buttons.map((x,i)=>'<button data-q="'+i+'"><span>'+x.icon+'</span>'+esc(x.title)+'<small>'+esc(x.sub)+'</small></button>').join('');
     box.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{
-      const x=quickButtons()[Number(b.dataset.q)];
+      const x=buttons[Number(b.dataset.q)];
       if(x.view)goView(x.view);else if(x.action==='chat'&&typeof openChat==='function')openChat();else if(x.action==='public'&&typeof openPublicBot==='function')openPublicBot();
     });
   }
@@ -206,7 +209,14 @@
     if(window.at360Api){clearInterval(ready);loadSummary();setTimeout(()=>{
       const p=new URLSearchParams(location.search).get('view');
       if(p&&document.getElementById('view-'+p))goView(p);
-      else if(!location.hash)goView('central');
+      else if(!location.hash){
+        if(!window.at360Can||window.at360Can('central'))goView('central');
+        else{
+          const choices=[['appointments','appointments'],['orders','orders'],['customers','customers'],['finance','finance'],['inventory','inventory'],['leads','leads'],['team','team']];
+          const hit=choices.find(x=>window.at360Can(x[1])&&document.getElementById('view-'+x[0]));
+          if(hit)goView(hit[0]);
+        }
+      }
     },350)}
     if(tries>60)clearInterval(ready);
   },200);
