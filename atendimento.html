@@ -20,7 +20,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh;max-width:1180px;marg
 .summary{margin-top:16px;border-radius:16px;background:#f8fafc;border:1px solid var(--line);padding:14px}.summary-row{display:flex;justify-content:space-between;gap:12px;font-size:11px;padding:5px 0}.summary-row.total{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;font-size:14px;font-weight:900}.send-order{width:100%;margin-top:13px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:0;border-radius:13px;padding:13px;font-weight:900}.send-order:disabled{opacity:.55}
 .chat{display:none;margin-top:18px;border:1px solid var(--line);border-radius:20px;overflow:hidden}.chat.show{display:block}.chat-head{padding:16px 18px;background:#0f172a;color:#fff}.chat-head b{display:block}.chat-head small{color:#86efac}.messages{height:360px;overflow:auto;background:#f8fafc;padding:15px;display:flex;flex-direction:column;gap:9px}.msg{max-width:82%;padding:10px 12px;border-radius:14px;font-size:12px;line-height:1.5}.msg.bot{background:#fff;border:1px solid var(--line);border-bottom-left-radius:5px}.msg.user{margin-left:auto;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border-bottom-right-radius:5px}.chat-form{display:flex;gap:8px;padding:11px;border-top:1px solid var(--line)}.chat-form input{flex:1;min-width:0;border:1px solid var(--line);border-radius:11px;padding:11px}.chat-form button{border:0;border-radius:11px;background:var(--brand);color:#fff;font-weight:900;padding:0 16px}
 .success{display:none;margin-top:18px;padding:23px;border-radius:20px;background:#ecfdf5;border:1px solid #bbf7d0;text-align:center}.success.show{display:block}.success .check{width:58px;height:58px;border-radius:18px;background:#16a34a;color:#fff;display:grid;place-items:center;font-size:28px;margin:0 auto 12px}.success h3{margin:0}.success p{color:#475569;font-size:12px;line-height:1.55}.order-code{font-size:24px;font-weight:900;letter-spacing:.02em}.auto-pix-pay{display:none;margin:16px auto 0;max-width:480px;padding:15px;border-radius:16px;background:#fff;border:1px solid #bbf7d0;text-align:left}.auto-pix-pay.show{display:grid;grid-template-columns:130px 1fr;gap:13px;align-items:center}.auto-pix-pay img{width:130px;height:130px;object-fit:contain;background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:5px}.auto-pix-pay h4{margin:0 0 6px;font-size:13px}.auto-pix-pay p{margin:0 0 8px;font-size:10px}.auto-pix-code{font-size:8px;line-height:1.35;background:#f8fafc;border:1px solid #e2e8f0;padding:8px;border-radius:9px;word-break:break-all;max-height:70px;overflow:auto}.auto-pix-copy{width:100%;margin-top:7px;border:0;border-radius:9px;background:#0f172a;color:#fff;padding:8px;font-size:9px;font-weight:900}.pix-paid-badge{display:none;margin-top:9px;padding:9px;border-radius:10px;background:#dcfce7;color:#166534;font-size:10px;font-weight:900}.pix-paid-badge.show{display:block}@media(max-width:560px){.auto-pix-pay.show{grid-template-columns:1fr;text-align:center}.auto-pix-pay img{margin:auto}}
-.footer{padding:18px 22px 28px;text-align:center;color:#94a3b8;font-size:10px}
+.regulated-public{display:none;margin-bottom:16px;padding:12px 14px;border:1px solid #fed7aa;background:#fff7ed;color:#9a3412;border-radius:14px;font-size:10px;line-height:1.5}.regulated-public.show{display:block}.age-check{display:none;margin-top:14px;padding:12px;border:1px solid #fed7aa;background:#fff7ed;border-radius:13px;color:#9a3412;font-size:10px;line-height:1.45}.age-check.show{display:flex;gap:9px;align-items:flex-start}.age-check input{margin-top:2px}.footer{padding:18px 22px 28px;text-align:center;color:#94a3b8;font-size:10px}
 @media(max-width:760px){.shell{box-shadow:none}.hero{padding:20px 15px}.hero-top{align-items:center}.logo{width:44px;height:44px;border-radius:14px}.hero h2{font-size:27px;margin-top:28px}.hero-copy{font-size:12px}.open-pill{font-size:9px;padding:7px 9px}.trust{gap:6px}.trust div{padding:9px 7px}.trust b{font-size:10px}.trust span{font-size:8px}.content{padding:15px}.products{grid-template-columns:1fr}.product p{min-height:0}.grid{grid-template-columns:1fr}.wide{grid-column:auto}.messages{height:330px}.msg{max-width:90%}.hero-actions{display:grid;grid-template-columns:1fr 1fr}.cta{padding:11px 9px;font-size:12px}}
 </style>
 </head>
@@ -41,6 +41,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh;max-width:1180px;marg
   </header>
 
   <main class="content">
+    <div class="regulated-public" id="regulatedPublic"></div>
     <section id="menuSection">
       <div class="section-head"><div><h3>Cardápio de hoje</h3><p>Escolha os itens e quantidades. O resumo aparece automaticamente.</p></div><div id="serviceHours" style="font-size:10px;color:#64748b;font-weight:800"></div></div>
       <div class="products" id="products"></div>
@@ -77,6 +78,7 @@ button,input,textarea{font:inherit}.shell{min-height:100vh;max-width:1180px;marg
         </div>
 
         <div class="summary" id="summary"></div>
+        <label class="age-check" id="ageCheck"><input type="checkbox" id="ageConfirmed"><span id="ageCheckText">Confirmo que tenho 18 anos ou mais e estou ciente de que poderá ser solicitado documento com foto na entrega ou retirada.</span></label>
         <button class="send-order" id="sendOrder">Confirmar pedido</button>
         <div id="orderError" style="min-height:18px;margin-top:9px;color:#be123c;font-size:10px;font-weight:800"></div>
       </div>
@@ -120,12 +122,23 @@ async function loadBot(){
   el('chatBusiness').textContent=bot.businessName||'Assistente virtual';
   el('logo').textContent=(bot.businessName||'A').trim().charAt(0).toUpperCase();
   el('businessMeta').textContent=[bot.mainService,bot.address].filter(Boolean).join(' • ');
-  if(bot.delivery?.enabled){
+  const regulated=!!bot.ageRestricted;
+  const tobacco=bot.regulatedCategory==='tobacco';
+  if(regulated){
+    el('regulatedPublic').classList.add('show');
+    el('regulatedPublic').textContent=bot.ageNotice||'Atendimento exclusivo para maiores de 18 anos.';
+    if(!tobacco)el('ageCheck').classList.add('show');
+  }
+  if(bot.delivery?.enabled&&bot.publicCatalogAllowed!==false){
     el('serviceHours').textContent='Pedidos '+bot.delivery.open+'–'+bot.delivery.close;
     renderProducts();
   }else{
     el('menuSection').style.display='none';
     el('orderBtn').style.display='none';
+    if(tobacco){
+      document.querySelector('.hero h2').textContent='Atendimento e informações da loja em um só lugar.';
+      document.querySelector('.hero-copy').textContent='Consulte horário, endereço e fale com a equipe. A vitrine pública de produtos fumígenos permanece desativada.';
+    }
   }
   el('pickupBox').textContent='📍 Retirada em: '+(bot.address||'confirme o endereço com o estabelecimento');
   addMsg(bot.greeting||'Olá! Como posso ajudar você hoje?','bot');
@@ -191,7 +204,8 @@ el('sendOrder').onclick=async()=>{
   const items=chosen.map(p=>({id:p.id,qty:p.qty}));
   if(!items.length){el('orderError').textContent='Escolha pelo menos um item.';return}
   if(!chosen.some(p=>p.kind!=='addon')){el('orderError').textContent='Escolha pelo menos um prato ou produto principal.';return}
-  const payload={items,fulfillment,customerName:el('customerName').value.trim(),phone:el('phone').value,notes:el('notes').value.trim(),address:{cep:el('cep').value,street:el('street').value,number:el('number').value,neighborhood:el('neighborhood').value,city:el('city').value,complement:el('complement').value,reference:el('reference').value}};
+  if(bot?.ageRestricted&&!el('ageConfirmed')?.checked){el('orderError').textContent='Confirme que você tem 18 anos ou mais para continuar.';return}
+  const payload={items,fulfillment,ageConfirmed:!!el('ageConfirmed')?.checked,customerName:el('customerName').value.trim(),phone:el('phone').value,notes:el('notes').value.trim(),address:{cep:el('cep').value,street:el('street').value,number:el('number').value,neighborhood:el('neighborhood').value,city:el('city').value,complement:el('complement').value,reference:el('reference').value}};
   el('sendOrder').disabled=true;el('sendOrder').textContent='Enviando pedido...';
   try{
     const r=await fetch('/api/public/bot/'+encodeURIComponent(botId)+'/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
