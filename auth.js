@@ -89,6 +89,22 @@
     return data;
   }
   window.at360Api=api;
+  window.at360Can=function(permission){
+    const a=window.at360Account||{};
+    if((a.accountType||'owner')==='owner')return true;
+    const p=Array.isArray(a.permissions)?a.permissions:[];
+    return p.includes('*')||p.includes(permission);
+  };
+  function applyPermissionUi(){
+    const can=window.at360Can;
+    const map={dashboard:'central',central:'central',chatbot:'chatbot',templates:'settings',leads:'leads',orders:'orders',appointments:'appointments',menu:'orders',customers:'customers',finance:'finance',team:'team',inventory:'inventory',install:'settings',settings:'settings',brain:'chatbot',simulator:'growth',growth:'growth'};
+    document.querySelectorAll('.nav-btn[data-view]').forEach(btn=>{
+      const perm=map[btn.dataset.view];if(!perm)return;
+      btn.style.display=can(perm)?'flex':'none';
+    });
+    const create=document.querySelector('.create-side');if(create)create.style.display=(can('chatbot')||can('settings'))?'block':'none';
+  }
+  window.at360ApplyPermissions=applyPermissionUi;
 
   async function loadAccount(){
     if(!token){overlay.classList.add('show');return false}
@@ -103,9 +119,12 @@
       fillForms();renderTemplates();updateUI();
       const profileName=document.querySelector('.profile b');
       const profileRole=document.querySelector('.profile small');
-      if(profileName) profileName.textContent=me.user.businessName||'Cliente';
-      if(profileRole) profileRole.textContent=me.user.email;
+      if(profileName) profileName.textContent=me.user.displayName||me.user.businessName||'Cliente';
+      if(profileRole) profileRole.textContent=(me.user.accountType==='staff'?(me.user.role+' • '):'')+me.user.email;
       overlay.classList.remove('show');
+      applyPermissionUi();
+      setTimeout(applyPermissionUi,600);
+      setTimeout(applyPermissionUi,1400);
       cloud.style.display='block';
       cloud.textContent=state.persistence==='postgres'?'● dados no banco':'● modo demonstração';
       if(state.persistence!=='postgres') cloud.title='O banco ainda não está conectado ao serviço.';
@@ -123,21 +142,24 @@
     syncing=true;
     clearTimeout(syncTimer);
     try{
-      await api('/api/state',{method:'PUT',body:JSON.stringify({config,metrics})});
+      const canSettings=window.at360Can('settings')||window.at360Can('chatbot');
+      if(canSettings) await api('/api/state',{method:'PUT',body:JSON.stringify({config,metrics})});
       const remote=await api('/api/state');
       const remoteById=new Map((remote.leads||[]).filter(x=>x.id).map(x=>[x.id,x]));
-      for(let i=0;i<leads.length;i++){
-        const l=leads[i];
-        if(l.id&&remoteById.has(l.id)){
-          await api('/api/leads/'+encodeURIComponent(l.id),{method:'PATCH',body:JSON.stringify({
-            status:l.status||'new',value:Number(l.value||0)
-          })});
-          remoteById.delete(l.id);
-        }else if(!l.id){
-          const created=await api('/api/leads',{method:'POST',body:JSON.stringify({
-            name:l.name,phone:l.phone,interest:l.interest,status:l.status||'new',value:Number(l.value||0)
-          })});
-          if(created.lead) leads[i]={...l,...created.lead,date:l.date||created.lead.date};
+      if(window.at360Can('leads')){
+        for(let i=0;i<leads.length;i++){
+          const l=leads[i];
+          if(l.id&&remoteById.has(l.id)){
+            await api('/api/leads/'+encodeURIComponent(l.id),{method:'PATCH',body:JSON.stringify({
+              status:l.status||'new',value:Number(l.value||0)
+            })});
+            remoteById.delete(l.id);
+          }else if(!l.id){
+            const created=await api('/api/leads',{method:'POST',body:JSON.stringify({
+              name:l.name,phone:l.phone,interest:l.interest,status:l.status||'new',value:Number(l.value||0)
+            })});
+            if(created.lead) leads[i]={...l,...created.lead,date:l.date||created.lead.date};
+          }
         }
       }
       for(const fresh of remoteById.values()){
@@ -174,6 +196,7 @@
       token=data.token;localStorage.setItem(TOKEN_KEY,token);
       window.at360Account=data.user;
       config={...config,botId:data.user.id};
+      applyPermissionUi();
       await loadAccount();
     }catch(e){err.textContent=e.message}
     finally{btn.disabled=false;btn.textContent='Entrar no painel'}
