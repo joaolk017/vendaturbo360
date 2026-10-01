@@ -525,7 +525,7 @@ function detectIntent(message) {
   const t = String(message || '').toLowerCase();
   if (/\b(oi|olá|ola|bom dia|boa tarde|boa noite|eai|e aí)\b/.test(t)) return 'greeting';
   if (/(preço|preco|valor|quanto custa|quanto fica|orçamento|orcamento)/.test(t)) return /orçamento|orcamento/.test(t) ? 'quote' : 'price';
-  if (/(comprar|quero fechar|quero contratar|quero agendar|agendar|reservar|pedido|fechar negócio|fechar negocio)/.test(t)) return 'buy';
+  if (/(comprar|quero fechar|quero contratar|quero agendar|agendar|agendamento|marcar|marca pra mim|marque|reservar|reserva|pedido|fechar negócio|fechar negocio)/.test(t)) return 'buy';
   if (/(horário|horario|abre|fecha|funciona|atendimento)/.test(t)) return 'schedule';
   if (/(serviço|servico|produto|fazem|vocês fazem|voces fazem|tem disponível|tem disponivel)/.test(t)) return 'services';
   if (/(endereço|endereco|onde fica|localização|localizacao|como chegar)/.test(t)) return 'location';
@@ -555,11 +555,22 @@ function buildSmartReply(cfg, message, history=[]) {
   const intent = detectIntent(message);
   const scored = scoreOpportunity(message, intent);
   const brain = cfg.brain || {};
+  const normalized = String(message || '').trim();
+  const lastBot = [...(history || [])].reverse().find(x => x && (x.role === 'bot' || x.role === 'assistant') && x.content);
+  const lastBotText = String(lastBot?.content || '').toLowerCase();
+  const isYes = /^(sim|s|pode|pode sim|confirmo|confirmar|quero|ok|okay|beleza|isso)$/i.test(normalized);
+  const looksLikeName = /^[A-Za-zÀ-ÿ]{2,}(?:\s+[A-Za-zÀ-ÿ]{2,}){0,3}$/.test(normalized) && normalized.length <= 60;
   const objective = brain.objective || 'sales';
   const qList = String(brain.qualification || '').split(/\n+/).map(x=>x.trim()).filter(Boolean);
   let reply = '';
   let askContact = false;
-  if (intent === 'greeting') reply = cfg.greeting;
+  if (isYes && /(deseja|quer que eu|posso verificar|confirmar|confirmo|agendar|marcar)/.test(lastBotText)) {
+    reply = 'Perfeito. Vou registrar sua intenção e seguir para o próximo passo. Se o pedido depender de vaga, estoque ou confirmação da equipe, isso ainda precisa ser validado pelo estabelecimento.';
+    askContact = true;
+  } else if (looksLikeName && /(seu nome|nome para|me informe.*nome|informar.*nome)/.test(lastBotText)) {
+    reply = 'Obrigado, ' + normalized + '. Agora posso continuar com a solicitação. Se ainda não informou seu WhatsApp, envie o número com DDD para a equipe conseguir confirmar com você.';
+    askContact = true;
+  } else if (intent === 'greeting') reply = cfg.greeting;
   else if (intent === 'price') reply = cfg.prices || 'Os valores dependem do que você precisa. Me conte um pouco mais para eu direcionar corretamente.';
   else if (intent === 'schedule') reply = cfg.hours ? 'Nosso horário de atendimento é: ' + cfg.hours : 'Posso confirmar o melhor horário para você.';
   else if (intent === 'services') reply = cfg.services ? 'Trabalhamos com: ' + cfg.services : 'Me diga o que você procura e eu verifico como podemos ajudar.';
