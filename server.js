@@ -1880,6 +1880,7 @@ async function handleApi(req, res, urlPath) {
     return json(res, 200, { configured: pushReady(), publicKey: VAPID_PUBLIC_KEY || '' });
   }
   if (req.method === 'POST' && urlPath === '/api/push/subscribe') {
+    if(!can('central'))return forbidden(res);
     const body=await parseBody(req);
     try {
       await savePushSubscription(auth.sub,body.subscription,req.headers['user-agent']||'');
@@ -1887,6 +1888,7 @@ async function handleApi(req, res, urlPath) {
     } catch(e) { return json(res,400,{error:e.message||'Não foi possível ativar notificações.'}); }
   }
   if (req.method === 'POST' && urlPath === '/api/push/test') {
+    if(!can('central'))return forbidden(res);
     const result=await notifyUser(auth.sub,{title:'🔔 AtendeBot 360',body:'Notificações ativadas com sucesso no seu celular.',url:'/',tag:'at360-test'});
     return json(res,200,result);
   }
@@ -2000,6 +2002,7 @@ async function handleApi(req, res, urlPath) {
     return json(res, 200, await getInsights(auth.sub));
   }
   if (req.method === 'GET' && urlPath === '/api/ai/status') {
+    if(!can('growth')&&!can('chatbot'))return forbidden(res);
     return json(res, 200, await getAiUsageSummary(auth.sub));
   }
   if (req.method === 'POST' && urlPath === '/api/brain/test') {
@@ -2014,7 +2017,17 @@ async function handleApi(req, res, urlPath) {
     return json(res, 200, { ...result, engine: ai?.limited ? 'daily-limit' : '360-rules' });
   }
   if (req.method === 'GET' && urlPath === '/api/state') {
-    return json(res, 200, await getState(auth.sub));
+    const state=await getState(auth.sub);
+    if((auth.accountType||'owner')==='staff'){
+      if(!can('leads'))state.leads=[];
+      if(!can('orders'))state.orders=[];
+      if(state.config){
+        state.config={...state.config};
+        if(!can('finance')&&!can('settings'))delete state.config.finance;
+        if(!can('chatbot')&&!can('settings'))delete state.config.brain;
+      }
+    }
+    return json(res, 200, state);
   }
   if (req.method === 'PUT' && urlPath === '/api/state') {
     if(!can('settings')&&!can('chatbot'))return forbidden(res);
