@@ -21,7 +21,7 @@
     .growth-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.insight-list{display:grid;gap:10px}.insight{padding:14px;border:1px solid #e2e8f0;border-radius:14px;background:#fff}.insight-top{display:flex;justify-content:space-between;gap:12px;align-items:start}.insight b{font-size:12px}.insight p{font-size:11px;color:#64748b;line-height:1.5;margin:5px 0 0}.insight button{margin-top:10px;border:0;border-radius:9px;background:#eef2ff;color:#4338ca;padding:7px 9px;font-size:10px;font-weight:900}
     .mini-bar{height:7px;background:#eef2f7;border-radius:99px;overflow:hidden;margin-top:7px}.mini-bar i{display:block;height:100%;background:linear-gradient(90deg,#6366f1,#7c3aed)}
     .live-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:900}.live-pill.shadow{background:#fff7ed;color:#c2410c}.live-pill.live{background:#ecfdf5;color:#047857}
-    .ai-engine{margin-top:14px;padding:14px;border:1px solid #e2e8f0;border-radius:15px;background:#fff}.ai-engine-top{display:flex;justify-content:space-between;gap:10px;align-items:center}.ai-engine b{font-size:12px}.ai-engine p{font-size:10px;color:#64748b;line-height:1.45;margin:5px 0 0}.ai-state{display:inline-flex;border-radius:999px;padding:6px 9px;font-size:9px;font-weight:900}.ai-state.on{background:#ecfdf5;color:#047857}.ai-state.off{background:#fff7ed;color:#c2410c}.ai-usage{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:11px}.ai-usage div{padding:9px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0}.ai-usage small{display:block;color:#64748b;font-size:8px}.ai-usage strong{display:block;margin-top:3px;font-size:12px}
+    .ai-engine{margin-top:14px;padding:14px;border:1px solid #e2e8f0;border-radius:15px;background:#fff}.ai-engine-top{display:flex;justify-content:space-between;gap:10px;align-items:center}.ai-engine b{font-size:12px}.ai-engine p{font-size:10px;color:#64748b;line-height:1.45;margin:5px 0 0}.ai-state{display:inline-flex;border-radius:999px;padding:6px 9px;font-size:9px;font-weight:900}.ai-state.on{background:#ecfdf5;color:#047857}.ai-state.off{background:#fff7ed;color:#c2410c}.ai-usage{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:11px}.ai-usage div{padding:9px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0}.ai-usage small{display:block;color:#64748b;font-size:8px}.ai-usage strong{display:block;margin-top:3px;font-size:12px}.sim-engine-tag{display:block;margin-top:7px;padding-top:6px;border-top:1px solid rgba(148,163,184,.24);font-size:8px;font-weight:900;letter-spacing:.02em;opacity:.76}
     @media(max-width:900px){.intel-grid,.sim-shell,.growth-grid{grid-template-columns:1fr}.growth-kpis{grid-template-columns:1fr 1fr}.sim-chat{height:480px}}
     @media(max-width:600px){.intel-form{grid-template-columns:1fr}.intel-form .wide{grid-column:auto}.growth-kpis{grid-template-columns:1fr 1fr}.intel-body{padding:15px}.sim-messages{padding:13px}.sim-msg{max-width:90%}}
   `;
@@ -115,7 +115,7 @@
         <div class="heading"><div><div class="intel-badge">◉ Laboratório seguro</div><h1 style="margin-top:9px">Simulador 360</h1><p>Converse como se fosse um cliente e acompanhe o Radar 360 em tempo real.</p></div><div class="heading-actions"><button class="btn secondary" onclick="window.at360ResetSim()">Reiniciar teste</button><button class="btn primary" onclick="goView('brain')">Ajustar cérebro</button></div></div>
         <div class="sim-shell">
           <div class="intel-card sim-chat">
-            <div class="intel-card-head"><div><h3 id="simBusiness">Seu negócio</h3><p>Ambiente de teste — não cria contato real no funil.</p></div><span class="intel-badge">Simulação</span></div>
+            <div class="intel-card-head"><div><h3 id="simBusiness">Seu negócio</h3><p>Ambiente de teste — não cria contato real no funil.</p></div><div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="intel-badge">Simulação</span><span id="simEngineState" class="ai-state off">Motor 360</span></div></div>
             <div class="sim-messages" id="simMessages"></div>
             <form class="sim-form" id="simForm"><input id="simInput" autocomplete="off" placeholder="Ex.: Preciso fazer esse serviço hoje. Quanto fica?"><button>Enviar</button></form>
           </div>
@@ -190,8 +190,11 @@
   };
 
   let simHistory=[];
-  function simAdd(text,type){
-    const d=document.createElement('div');d.className='sim-msg '+type;d.textContent=text;document.getElementById('simMessages').appendChild(d);d.parentElement.scrollTop=d.parentElement.scrollHeight;
+  function simAdd(text,type,engineText=''){
+    const d=document.createElement('div');d.className='sim-msg '+type;
+    const body=document.createElement('div');body.textContent=text;d.appendChild(body);
+    if(engineText){const tag=document.createElement('small');tag.className='sim-engine-tag';tag.textContent=engineText;d.appendChild(tag);}
+    document.getElementById('simMessages').appendChild(d);d.parentElement.scrollTop=d.parentElement.scrollHeight;
   }
   function startSim(){
     const box=document.getElementById('simMessages');if(!box)return;box.innerHTML='';simHistory=[];
@@ -245,13 +248,42 @@
   }
 
 
+  function prettyProvider(provider){
+    return provider==='groq'?'Groq':provider==='openai'?'OpenAI':'Motor 360';
+  }
+  function prettyModel(model){
+    const m=String(model||'');
+    if(/gpt-oss-20b/i.test(m))return'GPT-OSS 20B';
+    if(/gpt-oss-120b/i.test(m))return'GPT-OSS 120B';
+    return m.replace(/^openai\//i,'')||'IA';
+  }
+  function simEngineLabel(result){
+    if(result?.engine==='generative'){
+      return 'Resposta gerada por '+prettyProvider(result.provider)+' • '+prettyModel(result.model);
+    }
+    return 'Resposta gerada pelo Motor 360';
+  }
+  function updateSimEngine(result){
+    const state=document.getElementById('simEngineState');if(!state)return;
+    if(result?.engine==='generative'){
+      state.className='ai-state on';
+      state.textContent=prettyProvider(result.provider)+' • '+prettyModel(result.model);
+      state.title='A última resposta foi gerada pela IA '+prettyProvider(result.provider)+'.';
+    }else{
+      state.className='ai-state off';
+      state.textContent='Motor 360';
+      state.title='A última resposta usou o motor de regras do AtendeBot 360.';
+    }
+  }
+
   async function loadAiStatus(){
     if(!window.at360Api)return;
     try{
       const s=await window.at360Api('/api/ai/status');
       const state=document.getElementById('aiEngineState'),text=document.getElementById('aiEngineText');
-      if(state){state.className='ai-state '+(s.configured?'on':'off');state.textContent=s.configured?'Conectada':'Aguardando chave';}
-      if(text)text.textContent=s.configured?('Motor '+s.model+' pronto para Autopilot e Simulador.'):'A estrutura está pronta. Falta conectar a chave da IA no servidor.';
+      const provider=prettyProvider(s.provider),model=prettyModel(s.model);
+      if(state){state.className='ai-state '+(s.configured?'on':'off');state.textContent=s.configured?(provider+' ativa'):'Aguardando chave';}
+      if(text)text.textContent=s.configured?('🟢 IA '+provider+' ativa — '+model+'. Pronta para Autopilot e Simulador.'):'A estrutura está pronta. Falta conectar a chave da IA no servidor.';
       if(document.getElementById('aiToday'))document.getElementById('aiToday').textContent=s.today||0;
       if(document.getElementById('aiMonth'))document.getElementById('aiMonth').textContent=s.month||0;
       if(document.getElementById('aiLimit'))document.getElementById('aiLimit').textContent=s.dailyLimit||'—';
@@ -280,6 +312,6 @@
   if(oldUpdate){updateUI=function(){oldUpdate();premiumRefresh();};}
   document.getElementById('simForm')?.addEventListener('submit',async e=>{
     e.preventDefault();const input=document.getElementById('simInput'),msg=input.value.trim();if(!msg)return;input.value='';simAdd(msg,'user');simHistory.push({role:'user',content:msg});
-    const result=await simulate(msg);simAdd(result.reply||'Não consegui responder.','bot');simHistory.push({role:'bot',content:result.reply||''});radar(result);
+    const result=await simulate(msg);updateSimEngine(result);simAdd(result.reply||'Não consegui responder.','bot',simEngineLabel(result));simHistory.push({role:'bot',content:result.reply||''});radar(result);
   });
 })();
