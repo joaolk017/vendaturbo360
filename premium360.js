@@ -21,6 +21,7 @@
     .growth-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.insight-list{display:grid;gap:10px}.insight{padding:14px;border:1px solid #e2e8f0;border-radius:14px;background:#fff}.insight-top{display:flex;justify-content:space-between;gap:12px;align-items:start}.insight b{font-size:12px}.insight p{font-size:11px;color:#64748b;line-height:1.5;margin:5px 0 0}.insight button{margin-top:10px;border:0;border-radius:9px;background:#eef2ff;color:#4338ca;padding:7px 9px;font-size:10px;font-weight:900}
     .mini-bar{height:7px;background:#eef2f7;border-radius:99px;overflow:hidden;margin-top:7px}.mini-bar i{display:block;height:100%;background:linear-gradient(90deg,#6366f1,#7c3aed)}
     .live-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:900}.live-pill.shadow{background:#fff7ed;color:#c2410c}.live-pill.live{background:#ecfdf5;color:#047857}
+    .ai-engine{margin-top:14px;padding:14px;border:1px solid #e2e8f0;border-radius:15px;background:#fff}.ai-engine-top{display:flex;justify-content:space-between;gap:10px;align-items:center}.ai-engine b{font-size:12px}.ai-engine p{font-size:10px;color:#64748b;line-height:1.45;margin:5px 0 0}.ai-state{display:inline-flex;border-radius:999px;padding:6px 9px;font-size:9px;font-weight:900}.ai-state.on{background:#ecfdf5;color:#047857}.ai-state.off{background:#fff7ed;color:#c2410c}.ai-usage{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:11px}.ai-usage div{padding:9px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0}.ai-usage small{display:block;color:#64748b;font-size:8px}.ai-usage strong{display:block;margin-top:3px;font-size:12px}
     @media(max-width:900px){.intel-grid,.sim-shell,.growth-grid{grid-template-columns:1fr}.growth-kpis{grid-template-columns:1fr 1fr}.sim-chat{height:480px}}
     @media(max-width:600px){.intel-form{grid-template-columns:1fr}.intel-form .wide{grid-column:auto}.growth-kpis{grid-template-columns:1fr 1fr}.intel-body{padding:15px}.sim-messages{padding:13px}.sim-msg{max-width:90%}}
   `;
@@ -95,6 +96,10 @@
           </div>
           <div>
             <div class="brain-score"><small>Prontidão do Cérebro 360</small><strong id="brainScore">0%</strong><div class="brain-meter"><i id="brainMeter" style="width:0%"></i></div><span id="brainScoreText" style="font-size:11px;color:#cbd5e1">Complete os dados para melhorar o atendimento.</span></div>
+            <div class="ai-engine">
+              <div class="ai-engine-top"><div><b>IA Generativa 360</b><p id="aiEngineText">Verificando motor inteligente...</p></div><span id="aiEngineState" class="ai-state off">Verificando</span></div>
+              <div class="ai-usage"><div><small>HOJE</small><strong id="aiToday">0</strong></div><div><small>MÊS</small><strong id="aiMonth">0</strong></div><div><small>LIMITE/DIA</small><strong id="aiLimit">—</strong></div></div>
+            </div>
             <div class="feature-stack">
               <div class="feature-row"><i>🎯</i><div><b>Meta 360</b><span>O atendente sabe qual resultado deve perseguir em cada conversa.</span></div></div>
               <div class="feature-row"><i>🔥</i><div><b>Radar 360</b><span>Identifica sinais de compra, urgência e pedido de orçamento.</span></div></div>
@@ -214,6 +219,7 @@
   }
 
   async function loadGrowth(){
+    loadAiStatus();
     let data={conversations:0,messages:0,hot:0,intents:[],gaps:[]};
     if(window.at360Api){try{data=await window.at360Api('/api/insights')}catch(e){}}
     document.getElementById('growthConversations').textContent=data.conversations||0;
@@ -238,6 +244,21 @@
     document.querySelectorAll('#growthSuggestions [data-go]').forEach(b=>b.onclick=()=>goView(b.dataset.go));
   }
 
+
+  async function loadAiStatus(){
+    if(!window.at360Api)return;
+    try{
+      const s=await window.at360Api('/api/ai/status');
+      const state=document.getElementById('aiEngineState'),text=document.getElementById('aiEngineText');
+      if(state){state.className='ai-state '+(s.configured?'on':'off');state.textContent=s.configured?'Conectada':'Aguardando chave';}
+      if(text)text.textContent=s.configured?('Motor '+s.model+' pronto para Autopilot e Simulador.'):'A estrutura está pronta. Falta conectar a chave da IA no servidor.';
+      if(document.getElementById('aiToday'))document.getElementById('aiToday').textContent=s.today||0;
+      if(document.getElementById('aiMonth'))document.getElementById('aiMonth').textContent=s.month||0;
+      if(document.getElementById('aiLimit'))document.getElementById('aiLimit').textContent=s.dailyLimit||'—';
+      window.at360AiStatus=s;
+    }catch(e){}
+  }
+
   function enhanceInstall(){
     const id=config.botId||window.at360Account?.id;
     if(!id)return;
@@ -249,7 +270,7 @@
     if(link)link.textContent=location.origin+'/?bot='+encodeURIComponent(id);
   }
   function premiumRefresh(){
-    defaults();fillBrain();enhanceInstall();
+    defaults();fillBrain();enhanceInstall();loadAiStatus();
     const n=document.getElementById('simBusiness');if(n)n.textContent=config.businessName||'Seu negócio';
     const plan=document.querySelector('.sidebar-foot .plan strong');if(plan)plan.textContent='AtendeBot 360 Intelligence';
   }
