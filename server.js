@@ -48,7 +48,8 @@ const mem = {
   customerProfiles: new Map(),
   finance: new Map(),
   team: new Map(),
-  inventory: new Map()
+  inventory: new Map(),
+  staffAccounts: new Map()
 };
 const publicRate = new Map();
 
@@ -78,6 +79,7 @@ function seedDemo() {
   mem.finance.set(id, []);
   mem.team.set(id, []);
   mem.inventory.set(id, []);
+  mem.staffAccounts.set(id, []);
 }
 seedDemo();
 
@@ -250,6 +252,52 @@ async function initDb() {
     );
     CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id,active);
 
+    CREATE TABLE IF NOT EXISTS staff_accounts (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      team_member_id TEXT REFERENCES team_members(id) ON DELETE SET NULL,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      password_salt TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'Atendimento',
+      permissions JSONB NOT NULL DEFAULT '[]'::jsonb,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      last_login_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_staff_accounts_user ON staff_accounts(user_id,active);
+
+    CREATE TABLE IF NOT EXISTS payment_integrations (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      provider TEXT NOT NULL DEFAULT 'woovi',
+      app_id_encrypted TEXT,
+      webhook_secret_encrypted TEXT,
+      webhook_registered BOOLEAN NOT NULL DEFAULT FALSE,
+      active BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS pix_charges (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      provider TEXT NOT NULL DEFAULT 'woovi',
+      source_type TEXT NOT NULL,
+      source_id TEXT NOT NULL,
+      correlation_id TEXT UNIQUE NOT NULL,
+      amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'ACTIVE',
+      br_code TEXT,
+      provider_charge_id TEXT,
+      provider_data JSONB,
+      paid_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(user_id,source_type,source_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_pix_charges_user_status ON pix_charges(user_id,status);
+
     CREATE TABLE IF NOT EXISTS inventory_items (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -267,6 +315,19 @@ async function initDb() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_inventory_items_user ON inventory_items(user_id,active);
+
+    CREATE TABLE IF NOT EXISTS inventory_movements (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      inventory_item_id TEXT NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
+      source_type TEXT NOT NULL,
+      source_id TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      delta NUMERIC(12,3) NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(user_id,inventory_item_id,source_type,source_id,kind)
+    );
+    CREATE INDEX IF NOT EXISTS idx_inventory_movements_source ON inventory_movements(user_id,source_type,source_id);
 
     INSERT INTO financial_entries(id,user_id,type,category,description,amount,status,method,source_type,source_id,paid_at,created_at)
       SELECT 'order-'||id,user_id,'income','order','Pedido '||code,total,
@@ -387,6 +448,7 @@ async function createUser({ email, password, businessName }) {
   mem.finance.set(id, []);
   mem.team.set(id, []);
   mem.inventory.set(id, []);
+  mem.staffAccounts.set(id, []);
   return user;
 }
 function normalizeUser(user) {
