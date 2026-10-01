@@ -493,6 +493,8 @@ function publicConfig(user, config) {
         name: String(p.name || 'Item').slice(0,120),
         description: String(p.description || '').slice(0,240),
         price: Math.max(0, Number(p.price || 0)),
+        image: String(p.image || '').slice(0,700),
+        kind: p.kind === 'addon' ? 'addon' : 'product',
         available: p.available !== false
       })) : []
     } : { enabled:false, open:'11:00', close:'14:00', deliveryFee:0, minimumOrder:0, catalog:[] },
@@ -647,16 +649,20 @@ async function createPublicOrder(userId, cfg, body) {
   const requested = Array.isArray(body.items) ? body.items.slice(0,20) : [];
   const items = [];
   let subtotal = 0;
+  let hasMainItem = false;
   for (const it of requested) {
     const product = byId.get(String(it.id || ''));
     const qty = Math.max(1, Math.min(20, Math.floor(Number(it.qty || 1))));
     if (!product || !Number.isFinite(qty)) continue;
     const price = Math.max(0, Number(product.price || 0));
-    items.push({ id:String(product.id), name:String(product.name), qty, price, total:Number((price*qty).toFixed(2)) });
+    const kind = product.kind === 'addon' ? 'addon' : 'product';
+    if (kind !== 'addon') hasMainItem = true;
+    items.push({ id:String(product.id), name:String(product.name), kind, qty, price, total:Number((price*qty).toFixed(2)) });
     subtotal += price * qty;
   }
   subtotal = Number(subtotal.toFixed(2));
   if (!items.length) throw new Error('Escolha pelo menos um item.');
+  if (!hasMainItem) throw new Error('Escolha pelo menos um prato ou produto principal.');
   if (subtotal < Number(delivery.minimumOrder || 0)) throw new Error('O pedido mínimo ainda não foi atingido.');
   const fulfillment = body.fulfillment === 'pickup' ? 'pickup' : 'delivery';
   const address = fulfillment === 'delivery' && body.address && typeof body.address === 'object' ? {
