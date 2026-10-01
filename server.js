@@ -383,9 +383,28 @@ function b64url(input) {
   return Buffer.from(input).toString('base64url');
 }
 function signToken(user) {
-  const payload = b64url(JSON.stringify({ sub: user.id, email: user.email, exp: Date.now() + 1000 * 60 * 60 * 24 * 7 }));
+  const payload = b64url(JSON.stringify({
+    sub: user.id,
+    email: user.email,
+    accountType: user.accountType || 'owner',
+    staffId: user.staffId || null,
+    teamMemberId: user.teamMemberId || null,
+    role: user.role || 'Proprietário',
+    permissions: Array.isArray(user.permissions) ? user.permissions : ['*'],
+    name: user.name || null,
+    exp: Date.now() + 1000 * 60 * 60 * 24 * 7
+  }));
   const sig = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
   return payload + '.' + sig;
+}
+function hasPermission(auth, permission) {
+  if (!auth) return false;
+  if ((auth.accountType || 'owner') === 'owner') return true;
+  const list = Array.isArray(auth.permissions) ? auth.permissions : [];
+  return list.includes('*') || list.includes(permission);
+}
+function forbidden(res) {
+  return json(res, 403, { error:'Você não tem permissão para acessar este módulo.' });
 }
 function verifyToken(token) {
   if (!token || !token.includes('.')) return null;
@@ -455,7 +474,36 @@ function normalizeUser(user) {
   return {
     id: user.id,
     email: user.email,
-    businessName: user.business_name || user.businessName || ''
+    businessName: user.business_name || user.businessName || '',
+    accountType: 'owner',
+    role: 'Proprietário',
+    permissions: ['*'],
+    displayName: user.business_name || user.businessName || 'Proprietário'
+  };
+}
+async function findStaffByEmail(email) {
+  email=String(email||'').trim().toLowerCase();
+  if(pool){
+    const r=await pool.query('SELECT s.*,t.name member_name FROM staff_accounts s LEFT JOIN team_members t ON t.id=s.team_member_id WHERE s.email=$1',[email]);
+    return r.rows[0]||null;
+  }
+  for(const arr of mem.staffAccounts.values()){
+    const s=(arr||[]).find(x=>x.email===email);
+    if(s)return s;
+  }
+  return null;
+}
+function normalizeStaff(staff,owner){
+  return {
+    id: owner.id,
+    email: staff.email,
+    businessName: owner.business_name || owner.businessName || '',
+    accountType:'staff',
+    staffId:staff.id,
+    teamMemberId:staff.team_member_id || staff.teamMemberId || null,
+    role:staff.role || 'Atendimento',
+    permissions:Array.isArray(staff.permissions)?staff.permissions:[],
+    displayName:staff.member_name || staff.name || staff.email
   };
 }
 async function getState(userId) {
